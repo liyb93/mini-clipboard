@@ -26,8 +26,11 @@ public final class IndexStore: IndexStoreProtocol {
         self.pinboards = []
         self.defaultBoardID = UUID()
         loadSnapshot()
-        let retention = settingsStore.load().historyRetentionDays
-        queue.sync { cleanupExpiredItems(days: retention) }
+        let s = settingsStore.load()
+        queue.sync {
+            cleanupExpiredItems(days: s.historyRetentionDays)
+            cleanupExceededItems(limit: s.historyMaxItems)
+        }
     }
     public func save(_ item: ClipItem) throws {
         queue.sync {
@@ -35,8 +38,9 @@ public final class IndexStore: IndexStoreProtocol {
             items.removeAll { isDuplicate($0, persisted) }
             if let i = items.firstIndex(where: { $0.id == persisted.id }) { items[i] = persisted } else { items.insert(persisted, at: 0) }
             persist()
-            let retention = settingsStore.load().historyRetentionDays
-            cleanupExpiredItems(days: retention)
+            let s = settingsStore.load()
+            cleanupExpiredItems(days: s.historyRetentionDays)
+            cleanupExceededItems(limit: s.historyMaxItems)
         }
     }
     public func delete(_ id: UUID) throws {
@@ -200,6 +204,24 @@ public final class IndexStore: IndexStoreProtocol {
         let pinned = Set(boardItems.values.flatMap { $0 })
         let beforeCount = items.count
         items.removeAll { !pinned.contains($0.id) && $0.copiedAt < cutoff }
+        if items.count != beforeCount { persist() }
+    }
+
+    private func cleanupExceededItems(limit: Int) {
+        let pinned = Set(boardItems.values.flatMap { $0 })
+        if limit <= 0 {
+            let beforeCount = items.count
+            items.removeAll { !pinned.contains($0.id) }
+            if items.count != beforeCount { persist() }
+            return
+        }
+        let nonPinned = items.filter { !pinned.contains($0.id) }
+        let excess = max(0, nonPinned.count - limit)
+        if excess <= 0 { return }
+        let sorted = nonPinned.sorted { $0.copiedAt < $1.copiedAt }
+        let idsToRemove = Set(sorted.prefix(excess).map { $0.id })
+        let beforeCount = items.count
+        items.removeAll { idsToRemove.contains($0.id) }
         if items.count != beforeCount { persist() }
     }
 }

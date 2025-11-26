@@ -14,7 +14,27 @@ final class AppDelegate: NSObject, NSApplicationDelegate, NSWindowDelegate {
         controller?.start()
         let item = NSStatusBar.system.statusItem(withLength: NSStatusItem.squareLength)
         if let button = item.button {
-            if let symbol = NSImage(systemSymbolName: "clipboard", accessibilityDescription: nil) {
+            let fm = FileManager.default
+            if let base = Bundle.main.resourceURL {
+                let png = base.appendingPathComponent("public/menubar.png")
+                if fm.fileExists(atPath: png.path), let img = NSImage(contentsOf: png) {
+                    let thickness = NSStatusBar.system.thickness
+                    let target = NSSize(width: thickness - 4, height: thickness - 4)
+                    img.size = target
+                    img.isTemplate = true
+                    button.image = img
+                    button.imageScaling = .scaleProportionallyDown
+                    button.imagePosition = .imageOnly
+                    button.title = ""
+                } else if let symbol = NSImage(systemSymbolName: "clipboard", accessibilityDescription: nil) {
+                    symbol.isTemplate = true
+                    button.image = symbol
+                    button.title = ""
+                } else {
+                    button.title = "MiniClip"
+                }
+            } else if let symbol = NSImage(systemSymbolName: "clipboard", accessibilityDescription: nil) {
+                symbol.isTemplate = true
                 button.image = symbol
                 button.title = ""
             } else {

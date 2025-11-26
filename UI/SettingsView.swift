@@ -28,6 +28,20 @@ public struct SettingsView: View {
                     .padding(.vertical, 6)
                     .padding(.horizontal, 8)
                     HStack {
+                        Text("保留条数")
+                            .font(.system(size: 13))
+                            .frame(width: 80, alignment: .leading)
+                        Spacer()
+                        Stepper(value: $settings.historyMaxItems, in: 50...5000, step: 50) {
+                            Text("\(settings.historyMaxItems)")
+                                .font(.system(size: 13))
+                                .foregroundStyle(.secondary)
+                        }
+                        .frame(width: 120)
+                    }
+                    .padding(.vertical, 6)
+                    .padding(.horizontal, 8)
+                    HStack {
                         Text("历史布局")
                             .font(.system(size: 13))
                             .frame(width: 80, alignment: .leading)
