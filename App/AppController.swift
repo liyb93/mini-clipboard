@@ -13,6 +13,8 @@ final class AppController: ObservableObject {
     @Published var boards: [Pinboard] = []
     @Published var selectedBoardID: UUID?
     @Published var selectedItemID: UUID?
+    @Published var searchPopoverVisible: Bool = false
+    @Published var searchBarWidth: CGFloat = 0
     private let search: SearchService
     private var cancellables: Set<AnyCancellable> = []
     init() {
@@ -42,10 +44,19 @@ final class AppController: ObservableObject {
             self.paste.activateStack(directionAsc: true)
         }
         panel.setRoot(PanelRootView(controller: self))
+        panel.onQueryUpdate = { [weak self] q in self?.query = q }
+        panel.onSearchOverlayVisibleChanged = { [weak self] in self?.searchPopoverVisible = $0 }
+        panel.onShowSearchPopover = { [weak self] _ in
+            self?.searchPopoverVisible = true
+        }
+        panel.onHideSearchPopover = { [weak self] in self?.searchPopoverVisible = false }
+        $searchPopoverVisible
+            .sink { [weak self] v in self?.panel.setSearchActive(v) }
+            .store(in: &cancellables)
         selectedBoardID = store.defaultBoardID
 
         $query
-            .debounce(for: .milliseconds(250), scheduler: DispatchQueue.main)
+            .debounce(for: .milliseconds(50), scheduler: DispatchQueue.main)
             .removeDuplicates()
             .sink { [weak self] _ in self?.refresh() }
             .store(in: &cancellables)

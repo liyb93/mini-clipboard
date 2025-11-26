@@ -22,8 +22,6 @@ struct PanelRootView: View {
             HStack(spacing: 0) {
             VStack(spacing: 8) {
                 HStack {
-                    Image(systemName: "magnifyingglass")
-                    SearchPopoverField(text: $controller.query)
                     if !controller.query.isEmpty {
                         Button(action: { controller.query = ""; controller.refresh() }) {
                             Image(systemName: "xmark.circle.fill")
@@ -76,11 +74,44 @@ struct PanelRootView: View {
                             .font(.system(size: 12, weight: .bold))
                     }
                     .buttonStyle(.borderless)
+                    Spacer(minLength: 6)
+                    Button(action: { controller.searchPopoverVisible = true }) {
+                        Image(systemName: "magnifyingglass")
+                    }
+                    .buttonStyle(.borderless)
+                    .popover(isPresented: $controller.searchPopoverVisible, attachmentAnchor: .rect(.bounds), arrowEdge: .leading) {
+                        HStack(spacing: 8) {
+                            // Image(systemName: "magnifyingglass")
+                            TextField("搜索", text: $controller.query)
+                                .textFieldStyle(.plain)
+                                .focused($searchPopoverFocused)
+                                .onSubmit { }
+                                .frame(maxWidth: .infinity)
+                        }
+                        .padding(.horizontal, 12)
+                        .frame(height: 32)
+                        .frame(width: 115)
+                        .background(Color.clear)
+                        .onAppear { searchPopoverFocused = true }
+                    }
                 }
                 .padding(.horizontal, 12)
                 .frame(height: 32)
                 .background(.thickMaterial)
-                .clipShape(Capsule())
+                .clipShape(RoundedRectangle(cornerRadius: 16, style: .continuous))
+                .background(
+                    GeometryReader { geo in
+                        Color.clear
+                            .onAppear {
+                                controller.searchBarWidth = geo.size.width
+                                reportSearchFrame(geo)
+                            }
+                            .onChange(of: geo.size.width) { w in
+                                controller.searchBarWidth = w
+                                reportSearchFrame(geo)
+                            }
+                    }
+                )
                 ScrollView {
                     LazyVStack(alignment: .leading, spacing: 8) {
                         ForEach(controller.boards) { b in
@@ -228,6 +259,14 @@ struct PanelRootView: View {
         .onChange(of: layoutStyleRaw) { _ in controller.panel.updateLayoutHeight(animated: true) }
         .frame(minWidth: 880, minHeight: 290)
     }
+    private func reportSearchFrame(_ geo: GeometryProxy) {
+        if let win = NSApp.keyWindow ?? NSApp.windows.first {
+            let local = geo.frame(in: .global)
+            let nsRect = NSRect(x: local.origin.x, y: local.origin.y, width: local.size.width, height: local.size.height)
+            let screenRect = win.convertToScreen(nsRect)
+            controller.panel.updateSearchOverlayRect(screenRect)
+        }
+    }
     private func boardColor(_ b: Pinboard) -> Color {
         guard let s = b.color?.trimmingCharacters(in: .whitespacesAndNewlines).lowercased(), !s.isEmpty else { return .accentColor }
         switch s {
@@ -251,35 +290,4 @@ struct PanelRootView: View {
         }
     }
 }
-struct SearchPopoverField: View {
-    @Binding var text: String
-    @State private var show: Bool = false
-    @FocusState private var focused: Bool
-    var body: some View {
-        ZStack {
-            TextField("搜索", text: $text)
-                .textFieldStyle(.plain)
-                .frame(maxWidth: .infinity)
-                .onSubmit { }
-                .allowsHitTesting(false)
-            Rectangle()
-                .fill(Color.clear)
-                .contentShape(Rectangle())
-                .onTapGesture { show = true; DispatchQueue.main.async { focused = true } }
-        }
-        .popover(isPresented: $show) {
-            VStack(alignment: .leading, spacing: 8) {
-                TextField("搜索", text: $text)
-                    .textFieldStyle(.roundedBorder)
-                    .focused($focused)
-                    .onSubmit { }
-                HStack {
-                    Spacer()
-                    Button("关闭") { show = false }
-                }
-            }
-            .padding(12)
-            .frame(width: 280)
-        }
-    }
-}
+// 搜索弹窗视图已移除，统一由顶部按钮弹出

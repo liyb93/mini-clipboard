@@ -1,15 +1,31 @@
 import AppKit
 import SwiftUI
 import ApplicationServices
+import Carbon
+import Carbon.HIToolbox
 
 // 面板窗口控制器：创建半透明浮层窗口并处理显示/隐藏与定位
-public final class PanelWindowController: NSObject, NSWindowDelegate {
+public final class PanelWindowController: NSObject, NSWindowDelegate, NSTextFieldDelegate {
     private var window: NSWindow?
     private var rootView: AnyView?
     private var outsideClickMonitor: Any?
     private var keyMonitor: Any?
     private var effectView: NSVisualEffectView?
     private var toastWindow: NSWindow?
+    private var eventTap: CFMachPort?
+    private var eventRunLoopSource: CFRunLoopSource?
+    private var imeField: NSTextField?
+    private var searchOverlayWindow: NSPanel?
+    private var searchOverlayField: NSTextField?
+    private var searchOverlayRect: CGRect?
+    private var inputBuffer: String = ""
+    public var onQueryUpdate: ((String) -> Void)?
+    public var onSearchOverlayVisibleChanged: ((Bool) -> Void)?
+    public var onShowSearchPopover: ((String?) -> Void)?
+    public var onHideSearchPopover: (() -> Void)?
+    private var isSearchActive: Bool = false
+    public func setSearchActive(_ active: Bool) { isSearchActive = active }
+    public func updateSearchOverlayRect(_ rect: CGRect) { searchOverlayRect = rect }
     public override init() { super.init() }
     private func targetWidth() -> CGFloat {
         let s = activeScreen() ?? NSScreen.main
@@ -93,8 +109,12 @@ public final class PanelWindowController: NSObject, NSWindowDelegate {
             NSCursor.arrow.set()
             DispatchQueue.main.async { NSCursor.arrow.set() }
         }
+        inputBuffer = ""
+        onQueryUpdate?("")
         // 安装失焦与外部点击自动隐藏行为
         installHidingBehavior()
+        installEventTap()
+        imeField?.stringValue = ""
     }
     public func hide(animated: Bool = true) {
         guard let w = window else { return }
@@ -115,6 +135,13 @@ public final class PanelWindowController: NSObject, NSWindowDelegate {
         } completionHandler: {
             w.orderOut(nil)
         }
+        inputBuffer = ""
+        onQueryUpdate?("")
+        uninstallEventTap()
+        imeField?.stringValue = ""
+        searchOverlayWindow?.orderOut(nil)
+        searchOverlayWindow = nil
+        onSearchOverlayVisibleChanged?(false)
     }
     public func toggle() {
         if window?.isVisible == true { hide() } else { show() }
@@ -163,14 +190,156 @@ public final class PanelWindowController: NSObject, NSWindowDelegate {
                 if self.window?.isVisible == true { self.hide() }
             }
         }
-        if keyMonitor == nil {
-            keyMonitor = NSEvent.addGlobalMonitorForEvents(matching: [.keyDown]) { [weak self] event in
-                guard let self = self else { return }
-                if event.keyCode == 53, self.window?.isVisible == true { self.hide() }
-            }
-        }
+        // 键盘事件在 CGEventTap 中处理
         // 应用失活时隐藏面板
         NotificationCenter.default.addObserver(self, selector: #selector(appDidResignActive), name: NSApplication.didResignActiveNotification, object: nil)
+    }
+    private func installEventTap() {
+        uninstallEventTap()
+        let mask: CGEventMask = (1 << CGEventType.keyDown.rawValue) | (1 << CGEventType.flagsChanged.rawValue)
+        let callback: CGEventTapCallBack = { (proxy, type, event, refcon) -> Unmanaged<CGEvent>? in
+            guard let refcon = refcon else { return Unmanaged.passUnretained(event) }
+            let ctrl = Unmanaged<PanelWindowController>.fromOpaque(refcon).takeUnretainedValue()
+            if ctrl.window?.isVisible != true { return Unmanaged.passUnretained(event) }
+            if type == .tapDisabledByTimeout || type == .tapDisabledByUserInput {
+                if let tap = ctrl.eventTap { CGEvent.tapEnable(tap: tap, enable: true) }
+                return Unmanaged.passUnretained(event)
+            }
+            if type == .keyDown {
+                let keycode = event.getIntegerValueField(.keyboardEventKeycode)
+                if keycode == 57 || keycode == 102 || keycode == 104 { return Unmanaged.passUnretained(event) }
+                if keycode == 53 {
+                    if ctrl.isSearchActive { ctrl.onHideSearchPopover?(); return nil }
+                    ctrl.hide();
+                    return nil
+                }
+                let flags = event.flags
+                if flags.contains(.maskCommand) || flags.contains(.maskControl) || flags.contains(.maskAlternate) { return Unmanaged.passUnretained(event) }
+                if keycode == 123 || keycode == 124 || keycode == 125 || keycode == 126 { return Unmanaged.passUnretained(event) }
+                if ctrl.isFirstResponderTextInput() { return Unmanaged.passUnretained(event) }
+                if ctrl.isAnyTextInputActive() { return Unmanaged.passUnretained(event) }
+                if let ne = NSEvent(cgEvent: event), let s = ne.charactersIgnoringModifiers, !s.isEmpty {
+                    if ctrl.isSearchActive {
+                        return Unmanaged.passUnretained(event)
+                    } else {
+                        ctrl.onShowSearchPopover?(nil)
+                        if let copied = event.copy() {
+                            DispatchQueue.main.asyncAfter(deadline: .now() + 0.015) {
+                                copied.post(tap: .cgSessionEventTap)
+                            }
+                        }
+                        return nil
+                    }
+                }
+                return Unmanaged.passUnretained(event)
+            }
+            return Unmanaged.passUnretained(event)
+        }
+        if let tap = CGEvent.tapCreate(tap: .cgSessionEventTap, place: .headInsertEventTap, options: .defaultTap, eventsOfInterest: mask, callback: callback, userInfo: Unmanaged.passUnretained(self).toOpaque()) {
+            eventTap = tap
+            let src = CFMachPortCreateRunLoopSource(kCFAllocatorDefault, tap, 0)
+            eventRunLoopSource = src
+            CFRunLoopAddSource(CFRunLoopGetCurrent(), src, .commonModes)
+            CGEvent.tapEnable(tap: tap, enable: true)
+        } else {
+            showToast("需要输入监控权限")
+        }
+    }
+    private func showSearchOverlay() {
+        guard let rect = searchOverlayRect else { return }
+        let size = NSSize(width: rect.size.width, height: 32)
+        let w = NSPanel(contentRect: NSRect(x: rect.origin.x, y: rect.origin.y - (32 - rect.size.height)/2, width: size.width, height: size.height), styleMask: [.borderless], backing: .buffered, defer: false)
+        w.isReleasedWhenClosed = false
+        w.isOpaque = false
+        w.level = .statusBar
+        w.collectionBehavior = [.transient, .moveToActiveSpace, .fullScreenAuxiliary]
+        w.backgroundColor = .clear
+        w.hasShadow = false
+        let ev = NSVisualEffectView(frame: NSRect(origin: .zero, size: size))
+        ev.material = .hudWindow
+        ev.blendingMode = .withinWindow
+        ev.state = .active
+        ev.wantsLayer = true
+        ev.layer?.cornerRadius = 16
+        ev.layer?.masksToBounds = true
+        let tf = NSTextField(frame: NSRect(x: 28, y: 6, width: size.width - 40, height: 20))
+        tf.isBordered = false
+        tf.isBezeled = false
+        tf.drawsBackground = false
+        tf.font = NSFont.systemFont(ofSize: 13)
+        tf.delegate = self
+        ev.addSubview(tf)
+        let icon = NSImageView(frame: NSRect(x: 10, y: 8, width: 16, height: 16))
+        icon.image = NSImage(systemSymbolName: "magnifyingglass", accessibilityDescription: nil)
+        ev.addSubview(icon)
+        w.contentView = ev
+        searchOverlayField = tf
+        searchOverlayWindow?.orderOut(nil)
+        searchOverlayWindow = w
+        w.makeKeyAndOrderFront(nil)
+        w.orderFrontRegardless()
+        w.makeFirstResponder(tf)
+        onSearchOverlayVisibleChanged?(true)
+    }
+    private func isFirstResponderTextInput() -> Bool {
+        guard let w = window else { return false }
+        if let r = w.firstResponder {
+            if r is NSTextView || r is NSTextField { return true }
+            if let clz = object_getClass(r) {
+                let name = NSStringFromClass(clz)
+                if name.contains("NSTextView") || name.contains("NSTextField") { return true }
+            }
+        }
+        return false
+    }
+    private func isAnyTextInputActive() -> Bool {
+        for w in NSApp.windows {
+            if let r = w.firstResponder {
+                if r is NSTextView || r is NSTextField { return true }
+                let name = NSStringFromClass(type(of: r))
+                if name.contains("NSTextView") || name.contains("NSTextField") { return true }
+            }
+        }
+        return false
+    }
+    private func uninstallEventTap() {
+        if let src = eventRunLoopSource {
+            CFRunLoopRemoveSource(CFRunLoopGetCurrent(), src, .commonModes)
+            eventRunLoopSource = nil
+        }
+        if let tap = eventTap {
+            CGEvent.tapEnable(tap: tap, enable: false)
+            CFMachPortInvalidate(tap)
+            eventTap = nil
+        }
+    }
+    private func prepareIMEField() {
+        guard let ev = effectView else { return }
+        if imeField == nil {
+            let tf = NSTextField(frame: NSRect(x: 4, y: 4, width: 1, height: 22))
+            tf.isBordered = false
+            tf.isBezeled = false
+            tf.drawsBackground = false
+            tf.font = NSFont.systemFont(ofSize: 13)
+            tf.delegate = self
+            tf.alphaValue = 0.01
+            ev.addSubview(tf)
+            imeField = tf
+        }
+    }
+    public func controlTextDidChange(_ obj: Notification) {
+        if let tf = obj.object as? NSTextField, tf == imeField {
+            inputBuffer = tf.stringValue
+            onQueryUpdate?(inputBuffer)
+        }
+    }
+    private static func isIMEActive() -> Bool {
+        guard let src = TISCopyCurrentKeyboardInputSource()?.takeRetainedValue() else { return false }
+        if let idPtr = TISGetInputSourceProperty(src, kTISPropertyInputSourceID) {
+            let id = unsafeBitCast(idPtr, to: CFString.self) as String
+            return id.contains(".inputmethod.")
+        }
+        return false
     }
     @objc private func appDidResignActive() { hide() }
     public func windowDidResignKey(_ notification: Notification) { hide() }
