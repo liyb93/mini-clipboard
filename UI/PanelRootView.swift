@@ -256,6 +256,8 @@ struct PanelRootView: View {
                 .frame(maxWidth: .infinity, maxHeight: .infinity)
             }
         }
+        .onAppear { controller.sidebarWidth = sidebarWidth }
+        .onChange(of: sidebarWidth) { w in controller.sidebarWidth = w }
         .onChange(of: layoutStyleRaw) { _ in controller.panel.updateLayoutHeight(animated: true) }
         .frame(minWidth: 880, minHeight: 290)
     }

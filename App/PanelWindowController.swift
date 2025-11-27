@@ -23,6 +23,12 @@ public final class PanelWindowController: NSObject, NSWindowDelegate, NSTextFiel
     public var onSearchOverlayVisibleChanged: ((Bool) -> Void)?
     public var onShowSearchPopover: ((String?) -> Void)?
     public var onHideSearchPopover: (() -> Void)?
+    public var onArrowLeft: (() -> Void)?
+    public var onArrowRight: (() -> Void)?
+    public var onArrowUp: (() -> Void)?
+    public var onArrowDown: (() -> Void)?
+    public var onEnter: (() -> Void)?
+    public var onShown: (() -> Void)?
     private var isSearchActive: Bool = false
     public func setSearchActive(_ active: Bool) { isSearchActive = active }
     public func updateSearchOverlayRect(_ rect: CGRect) { searchOverlayRect = rect }
@@ -115,6 +121,7 @@ public final class PanelWindowController: NSObject, NSWindowDelegate, NSTextFiel
         installHidingBehavior()
         installEventTap()
         imeField?.stringValue = ""
+        onShown?()
     }
     public func hide(animated: Bool = true) {
         guard let w = window else { return }
@@ -215,7 +222,14 @@ public final class PanelWindowController: NSObject, NSWindowDelegate, NSTextFiel
                 }
                 let flags = event.flags
                 if flags.contains(.maskCommand) || flags.contains(.maskControl) || flags.contains(.maskAlternate) { return Unmanaged.passUnretained(event) }
-                if keycode == 123 || keycode == 124 || keycode == 125 || keycode == 126 { return Unmanaged.passUnretained(event) }
+                // 方向键与回车处理（面板自身拦截）
+                if !ctrl.isFirstResponderTextInput() && !ctrl.isAnyTextInputActive() {
+                    if keycode == 123 { ctrl.onArrowLeft?(); return nil }
+                    if keycode == 124 { ctrl.onArrowRight?(); return nil }
+                    if keycode == 126 { ctrl.onArrowUp?(); return nil }
+                    if keycode == 125 { ctrl.onArrowDown?(); return nil }
+                    if keycode == 36 || keycode == 76 { ctrl.onEnter?(); return nil }
+                }
                 if ctrl.isFirstResponderTextInput() { return Unmanaged.passUnretained(event) }
                 if ctrl.isAnyTextInputActive() { return Unmanaged.passUnretained(event) }
                 if let ne = NSEvent(cgEvent: event), let s = ne.charactersIgnoringModifiers, !s.isEmpty {
@@ -244,6 +258,10 @@ public final class PanelWindowController: NSObject, NSWindowDelegate, NSTextFiel
         } else {
             showToast("需要输入监控权限")
         }
+    }
+    public func contentWidth() -> CGFloat {
+        if let w = window { return w.frame.size.width }
+        return targetWidth()
     }
     private func showSearchOverlay() {
         guard let rect = searchOverlayRect else { return }

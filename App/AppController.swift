@@ -15,6 +15,7 @@ final class AppController: ObservableObject {
     @Published var selectedItemID: UUID?
     @Published var searchPopoverVisible: Bool = false
     @Published var searchBarWidth: CGFloat = 0
+    @Published var sidebarWidth: CGFloat = 180
     private let search: SearchService
     private var cancellables: Set<AnyCancellable> = []
     init() {
@@ -37,6 +38,8 @@ final class AppController: ObservableObject {
             if idx-1 < list.count {
                 self.monitor.suppressCaptures(for: 1.0)
                 self.paste.paste(list[idx-1], plainText: plain)
+                self.store.moveToFront(list[idx-1].id)
+                self.refresh()
             }
         }
         hotkeys.onStackToggle = { [weak self] in
@@ -50,6 +53,12 @@ final class AppController: ObservableObject {
             self?.searchPopoverVisible = true
         }
         panel.onHideSearchPopover = { [weak self] in self?.searchPopoverVisible = false }
+        panel.onShown = { [weak self] in self?.selectFirstItemIfNeeded() }
+        panel.onArrowLeft = { [weak self] in self?.moveSelectionLeft() }
+        panel.onArrowRight = { [weak self] in self?.moveSelectionRight() }
+        panel.onArrowUp = { [weak self] in self?.moveSelectionUp() }
+        panel.onArrowDown = { [weak self] in self?.moveSelectionDown() }
+        panel.onEnter = { [weak self] in self?.confirmSelectionAndPaste() }
         $searchPopoverVisible
             .sink { [weak self] v in self?.panel.setSearchActive(v) }
             .store(in: &cancellables)
@@ -87,6 +96,8 @@ final class AppController: ObservableObject {
     func pasteItem(_ item: ClipItem, plain: Bool) {
         monitor.suppressCaptures(for: 1.0)
         paste.paste(item, plainText: plain)
+        store.moveToFront(item.id)
+        refresh()
         panel.hide()
         let msg = plain ? "已复制为纯文本" : "已复制到剪贴板"
         panel.showToast(msg)
@@ -114,5 +125,70 @@ final class AppController: ObservableObject {
     }
     func selectItem(_ item: ClipItem) {
         selectedItemID = item.id
+    }
+    private func selectFirstItemIfNeeded() {
+        if selectedItemID == nil { selectedItemID = items.first?.id }
+    }
+    private func currentIndex() -> Int? {
+        guard let id = selectedItemID, let idx = items.firstIndex(where: { $0.id == id }) else { return nil }
+        return idx
+    }
+    private func setIndex(_ idx: Int) {
+        guard !items.isEmpty else { return }
+        let clamped = max(0, min(items.count - 1, idx))
+        selectedItemID = items[clamped].id
+    }
+    private func layoutStyle() -> HistoryLayoutStyle {
+        let raw = UserDefaults.standard.string(forKey: "historyLayoutStyle") ?? "horizontal"
+        return HistoryLayoutStyle(rawValue: raw) ?? .horizontal
+    }
+    private func estimatedGridColumns() -> Int {
+        let width = panel.contentWidth()
+        let divider: CGFloat = 8
+        let horizontalPadding: CGFloat = 24
+        let cardWidth: CGFloat = 240
+        let spacing: CGFloat = 12
+        let contentArea = max(0, width - sidebarWidth - divider)
+        let available = max(0, contentArea - horizontalPadding)
+        let cols = Int(floor((available + spacing) / (cardWidth + spacing)))
+        return max(1, cols)
+    }
+    private func moveSelectionLeft() {
+        guard !items.isEmpty else { return }
+        if layoutStyle() == .grid {
+            let idx = currentIndex() ?? 0
+            setIndex(idx - 1)
+        } else {
+            let idx = currentIndex() ?? 0
+            setIndex(idx - 1)
+        }
+    }
+    private func moveSelectionRight() {
+        guard !items.isEmpty else { return }
+        let idx = currentIndex() ?? 0
+        setIndex(idx + 1)
+    }
+    private func moveSelectionUp() {
+        guard !items.isEmpty else { return }
+        if layoutStyle() == .grid {
+            let cols = estimatedGridColumns()
+            let idx = currentIndex() ?? 0
+            setIndex(idx - cols)
+        }
+    }
+    private func moveSelectionDown() {
+        guard !items.isEmpty else { return }
+        if layoutStyle() == .grid {
+            let cols = estimatedGridColumns()
+            let idx = currentIndex() ?? 0
+            setIndex(idx + cols)
+        }
+    }
+    private func confirmSelectionAndPaste() {
+        if let id = selectedItemID, let item = items.first(where: { $0.id == id }) {
+            pasteItem(item, plain: false)
+        } else if let first = items.first {
+            pasteItem(first, plain: false)
+        }
     }
 }

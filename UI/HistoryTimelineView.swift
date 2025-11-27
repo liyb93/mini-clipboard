@@ -232,12 +232,15 @@ private struct ItemCardView: View, Equatable {
                 }
             }
             .frame(width: cardWidth, height: 220)
-            .background(cardBackground)
-            .overlay(
+            .background(
                 RoundedRectangle(cornerRadius: 14)
-                    .strokeBorder(borderColor, lineWidth: borderWidth)
+                    .fill(cardBackground)
             )
             .clipShape(RoundedRectangle(cornerRadius: 14))
+            .overlay(
+                RoundedRectangle(cornerRadius: 14)
+                    .stroke(borderColor, lineWidth: borderWidth)
+            )
             .overlay(alignment: .topTrailing) {
                 if let img = appIcon {
                     Image(nsImage: img)
@@ -539,7 +542,7 @@ private struct ItemCardView: View, Equatable {
         case .color: return "paintpalette"
         }
     }
-    private var cardBackground: some View { Color.white }
+    private var cardBackground: Color { Color.white }
     private var borderColor: Color { isSelected ? Color.accentColor.opacity(0.85) : Color.primary.opacity(0.06) }
     private var borderWidth: CGFloat { isSelected ? 2 : 0.8 }
     private var shadowColor: Color { Color.black.opacity(0.15) }

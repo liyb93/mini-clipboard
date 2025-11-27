@@ -130,6 +130,15 @@ public final class IndexStore: IndexStoreProtocol {
         let ids = boardItems[boardID] ?? []
         return items.filter { ids.contains($0.id) }
     }
+    public func moveToFront(_ id: UUID) {
+        queue.sync {
+            if let idx = items.firstIndex(where: { $0.id == id }) {
+                let i = items.remove(at: idx)
+                items.insert(i, at: 0)
+                persist()
+            }
+        }
+    }
     private func isDuplicate(_ a: ClipItem, _ b: ClipItem) -> Bool {
         if a.type != b.type { return false }
         switch a.type {
