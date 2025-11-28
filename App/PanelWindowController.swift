@@ -315,6 +315,8 @@ public final class PanelWindowController: NSObject, NSWindowDelegate, NSTextFiel
     }
     private func isAnyTextInputActive() -> Bool {
         for w in NSApp.windows {
+            if !w.isVisible { continue }
+            if !w.isKeyWindow { continue }
             if let r = w.firstResponder {
                 if r is NSTextView || r is NSTextField { return true }
                 let name = NSStringFromClass(type(of: r))

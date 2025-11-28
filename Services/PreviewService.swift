@@ -27,7 +27,7 @@ public final class PreviewService: NSObject {
             w.minSize = NSSize(width: 360, height: 280)
             let ev = NSVisualEffectView(frame: NSRect(origin: .zero, size: size))
             ev.material = .popover
-            ev.blendingMode = .withinWindow
+            ev.blendingMode = .behindWindow
             ev.state = .active
             ev.wantsLayer = true
             ev.layer?.cornerRadius = 16
@@ -75,6 +75,7 @@ public final class PreviewService: NSObject {
     public func isVisible() -> Bool { panel?.isVisible == true }
     public func close() {
         guard let w = panel else { return }
+        panel?.makeFirstResponder(nil)
         let finalFrame = w.frame
         let scale: CGFloat = 0.96
         let targetSize = NSSize(width: finalFrame.size.width * scale, height: finalFrame.size.height * scale)
@@ -119,8 +120,18 @@ private struct PreviewContentView: View {
         case .text:
             let s = item.text ?? ""
             if s.count > 50000 {
-                LargeTextView(text: s)
-                    .frame(maxWidth: .infinity, maxHeight: .infinity)
+                if #available(macOS 13.0, *) {
+                    TextEditor(text: .constant(s))
+                        .font(.system(size: 13))
+                        .scrollContentBackground(.hidden)
+                        .frame(maxWidth: .infinity, maxHeight: .infinity)
+                        .background(Color.clear)
+                } else {
+                    TextEditor(text: .constant(s))
+                        .font(.system(size: 13))
+                        .frame(maxWidth: .infinity, maxHeight: .infinity)
+                        .background(Color.clear)
+                }
             } else {
                 ScrollView { Text(s).font(.system(size: 13)).textSelection(.enabled) }
             }
@@ -168,6 +179,7 @@ private struct LargeTextView: NSViewRepresentable {
         let scroll = NSScrollView()
         scroll.hasVerticalScroller = true
         scroll.hasHorizontalScroller = false
+        scroll.usesPredominantAxisScrolling = true
         scroll.drawsBackground = false
         scroll.borderType = .noBorder
         let tv = NSTextView()
@@ -186,16 +198,25 @@ private struct LargeTextView: NSViewRepresentable {
         tv.usesFindBar = false
         tv.importsGraphics = false
         tv.allowsImageEditing = false
-        tv.textContainerInset = NSSize(width: 0, height: 0)
+        tv.textContainerInset = NSSize(width: 8, height: 8)
+        tv.isVerticallyResizable = true
+        tv.isHorizontallyResizable = false
+        tv.minSize = NSSize(width: 0, height: scroll.contentSize.height)
+        tv.maxSize = NSSize(width: CGFloat.greatestFiniteMagnitude, height: CGFloat.greatestFiniteMagnitude)
+        tv.textContainer?.containerSize = NSSize(width: scroll.contentSize.width, height: .greatestFiniteMagnitude)
         tv.textContainer?.widthTracksTextView = true
         tv.textContainer?.heightTracksTextView = false
         tv.layoutManager?.allowsNonContiguousLayout = true
         tv.string = text
+        tv.setFrameSize(NSSize(width: scroll.contentSize.width, height: scroll.contentSize.height))
         scroll.documentView = tv
         return scroll
     }
     func updateNSView(_ scroll: NSScrollView, context: Context) {
         if let tv = scroll.documentView as? NSTextView {
+            let w = max(1, scroll.bounds.size.width)
+            tv.textContainer?.containerSize = NSSize(width: w, height: .greatestFiniteMagnitude)
+            tv.setFrameSize(NSSize(width: w, height: max(tv.frame.size.height, scroll.bounds.size.height)))
             if tv.string != text { tv.string = text }
         }
     }
