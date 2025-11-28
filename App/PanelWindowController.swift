@@ -31,7 +31,13 @@ public final class PanelWindowController: NSObject, NSWindowDelegate, NSTextFiel
     public var onSpace: (() -> Void)?
     public var onShown: (() -> Void)?
     private var isSearchActive: Bool = false
-    public func setSearchActive(_ active: Bool) { isSearchActive = active }
+    public func setSearchActive(_ active: Bool) {
+        isSearchActive = active
+        if !active {
+            clearIMEFocus()
+            window?.makeFirstResponder(nil)
+        }
+    }
     public func updateSearchOverlayRect(_ rect: CGRect) { searchOverlayRect = rect }
     public override init() { super.init() }
     private func targetWidth() -> CGFloat {
@@ -158,6 +164,7 @@ public final class PanelWindowController: NSObject, NSWindowDelegate, NSTextFiel
         onQueryUpdate?("")
         uninstallKeyMonitor()
         imeField?.stringValue = ""
+        clearIMEFocus()
         searchOverlayWindow?.orderOut(nil)
         searchOverlayWindow = nil
         onSearchOverlayVisibleChanged?(false)
@@ -230,7 +237,7 @@ public final class PanelWindowController: NSObject, NSWindowDelegate, NSTextFiel
                     return nil
                 }
                 if keycode == 53 {
-                    if self.isSearchActive { self.onHideSearchPopover?(); return nil }
+                    if self.isSearchActive { self.onHideSearchPopover?(); self.clearIMEFocus(); return nil }
                     if self.previewService?.isVisible() == true { self.previewService?.close(); return nil }
                     self.hide();
                     return nil
@@ -251,8 +258,8 @@ public final class PanelWindowController: NSObject, NSWindowDelegate, NSTextFiel
                         return ev
                     } else {
                         self.onShowSearchPopover?(nil)
-                        DispatchQueue.main.asyncAfter(deadline: .now() + 0.02) {
-                            self.onQueryUpdate?(s)
+                        DispatchQueue.main.asyncAfter(deadline: .now() + 0.016) {
+                            NSApp.postEvent(ev, atStart: false)
                         }
                         return nil
                     }
@@ -340,6 +347,12 @@ public final class PanelWindowController: NSObject, NSWindowDelegate, NSTextFiel
             tf.alphaValue = 0.01
             ev.addSubview(tf)
             imeField = tf
+        }
+    }
+    private func clearIMEFocus() {
+        guard let w = window else { return }
+        if let tf = imeField, w.firstResponder === tf {
+            w.makeFirstResponder(nil)
         }
     }
     public func controlTextDidChange(_ obj: Notification) {
