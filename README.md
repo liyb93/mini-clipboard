@@ -21,7 +21,8 @@
 
 ## 界面预览
 ![列表布局](docs/image/list_mode.png)
-![演示](docs/video/demo2.mp4)
+查看演示视频：👇
+[![演示视频](docs/image/cover.png)](https://youtu.be/ID8JOoSwYC8)
 
 ## 环境要求
 - macOS 12+（Apple Silicon 原生）
