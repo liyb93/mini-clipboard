@@ -56,7 +56,9 @@ final class AppController: ObservableObject {
             self?.searchPopoverVisible = true
         }
         panel.onHideSearchPopover = { [weak self] in self?.searchPopoverVisible = false }
-        panel.onShown = { [weak self] in self?.selectFirstItemIfNeeded() }
+        panel.onShown = { [weak self] in
+            self?.selectFirstItemIfNeeded()
+        }
         panel.onArrowLeft = { [weak self] in self?.moveSelectionLeft() }
         panel.onArrowRight = { [weak self] in self?.moveSelectionRight() }
         panel.onArrowUp = { [weak self] in self?.moveSelectionUp() }
@@ -78,6 +80,15 @@ final class AppController: ObservableObject {
             .debounce(for: .milliseconds(50), scheduler: DispatchQueue.main)
             .removeDuplicates()
             .sink { [weak self] _ in self?.refresh() }
+            .store(in: &cancellables)
+        $selectedItemID
+            .removeDuplicates()
+            .sink { [weak self] id in
+                guard let self = self else { return }
+                guard self.panel.previewService?.isVisible() == true else { return }
+                guard let id = id, let item = self.items.first(where: { $0.id == id }) else { return }
+                self.panel.showPreview(item)
+            }
             .store(in: &cancellables)
     }
     

@@ -50,6 +50,9 @@ public final class PreviewService: NSObject {
             hosting?.rootView = AnyView(PreviewContentView(item: item))
         }
         guard let w = panel else { return }
+        if w.isVisible {
+            return
+        }
         if let s = activeScreen() ?? NSScreen.main {
             let f = s.visibleFrame
             let x = f.midX - (size.width / 2)
@@ -154,8 +157,10 @@ private struct PreviewContentView: View {
                 }
             } else {
                 if isProbableCode(s) || isJSON(s) {
-                    ScrollView { Text(s).font(.system(size: 13, design: .monospaced)).textSelection(.enabled) }
+                    SyntaxTextView(text: s)
                         .id(item.id)
+                        .frame(maxWidth: .infinity, maxHeight: .infinity)
+                        .frame(minHeight: 220)
                 } else {
                     ScrollView { Text(s).font(.system(size: 13)).textSelection(.enabled) }
                         .id(item.id)
@@ -292,6 +297,7 @@ private struct LargeTextView: NSViewRepresentable {
         scroll.usesPredominantAxisScrolling = true
         scroll.drawsBackground = false
         scroll.borderType = .noBorder
+        scroll.setFrameSize(NSSize(width: 600, height: 220))
         let tv = NSTextView()
         tv.isEditable = false
         tv.isSelectable = true
@@ -362,22 +368,28 @@ private struct SyntaxTextView: NSViewRepresentable {
         tv.isHorizontallyResizable = false
         tv.minSize = NSSize(width: 0, height: scroll.contentSize.height)
         tv.maxSize = NSSize(width: CGFloat.greatestFiniteMagnitude, height: CGFloat.greatestFiniteMagnitude)
-        tv.textContainer?.containerSize = NSSize(width: scroll.contentSize.width, height: .greatestFiniteMagnitude)
+        let initialW: CGFloat = 600
+        tv.textContainer?.containerSize = NSSize(width: initialW, height: .greatestFiniteMagnitude)
         tv.textContainer?.widthTracksTextView = true
         tv.textContainer?.heightTracksTextView = false
         tv.layoutManager?.allowsNonContiguousLayout = true
         tv.string = text
         applyHighlight(to: tv)
-        tv.setFrameSize(NSSize(width: scroll.contentSize.width, height: scroll.contentSize.height))
+        tv.setFrameSize(NSSize(width: initialW, height: scroll.contentSize.height))
         scroll.documentView = tv
         return scroll
     }
     func updateNSView(_ scroll: NSScrollView, context: Context) {
         if let tv = scroll.documentView as? NSTextView {
-            let w = max(1, scroll.bounds.size.width)
-            tv.textContainer?.containerSize = NSSize(width: w, height: .greatestFiniteMagnitude)
-            tv.setFrameSize(NSSize(width: w, height: max(tv.frame.size.height, scroll.bounds.size.height)))
+            scroll.layoutSubtreeIfNeeded()
+            var w = scroll.bounds.size.width
+            if w < 10 { w = max(scroll.frame.size.width, 600) }
             if tv.string != text { tv.string = text }
+            tv.textContainer?.containerSize = NSSize(width: w, height: .greatestFiniteMagnitude)
+            tv.layoutManager?.ensureLayout(for: tv.textContainer!)
+            let used = tv.layoutManager?.usedRect(for: tv.textContainer!) ?? .zero
+            let h = max(used.size.height + tv.textContainerInset.height * 2, max(scroll.bounds.size.height, 220))
+            tv.setFrameSize(NSSize(width: w, height: h))
             applyHighlight(to: tv)
         }
     }
