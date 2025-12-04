@@ -12,6 +12,7 @@ public final class PanelWindowController: NSObject, NSWindowDelegate, NSTextFiel
     private var keyMonitor: Any?
     private var effectView: NSVisualEffectView?
     private var toastWindow: NSWindow?
+    private var bulkActionsWindow: NSPanel?
     private var imeField: NSTextField?
     private var previousFrontApp: NSRunningApplication?
     private var searchOverlayWindow: NSPanel?
@@ -563,6 +564,66 @@ public final class PanelWindowController: NSObject, NSWindowDelegate, NSTextFiel
             }
         case .grid:
             previewService?.show(item, placement: .centerOnScreen)
+        }
+    }
+    public func showBulkActions(_ view: AnyView, preferTop: Bool) {
+        guard let w = window else { return }
+        let size = NSSize(width: 260, height: 180)
+        let panel = NSPanel(contentRect: NSRect(origin: .zero, size: size), styleMask: [.borderless, .nonactivatingPanel], backing: .buffered, defer: false)
+        panel.isReleasedWhenClosed = true
+        panel.titleVisibility = .hidden
+        panel.titlebarAppearsTransparent = true
+        panel.isOpaque = false
+        panel.level = .statusBar
+        panel.collectionBehavior = [.transient, .moveToActiveSpace, .fullScreenAuxiliary]
+        panel.backgroundColor = .clear
+        panel.hasShadow = false
+        let ev = NSVisualEffectView(frame: NSRect(origin: .zero, size: size))
+        ev.material = .popover
+        ev.blendingMode = .withinWindow
+        ev.state = .active
+        ev.wantsLayer = true
+        ev.layer?.cornerRadius = 8
+        ev.layer?.masksToBounds = true
+        let hosting = NSHostingView(rootView: view)
+        hosting.translatesAutoresizingMaskIntoConstraints = false
+        ev.addSubview(hosting)
+        NSLayoutConstraint.activate([
+            hosting.leadingAnchor.constraint(equalTo: ev.leadingAnchor),
+            hosting.trailingAnchor.constraint(equalTo: ev.trailingAnchor),
+            hosting.topAnchor.constraint(equalTo: ev.topAnchor),
+            hosting.bottomAnchor.constraint(equalTo: ev.bottomAnchor)
+        ])
+        panel.contentView = ev
+        let gap: CGFloat = 4
+        let x = w.frame.minX
+        let y: CGFloat = {
+            if preferTop { return w.frame.maxY + gap } else { return w.frame.minY - size.height - gap }
+        }()
+        let startY = y + (preferTop ? 10 : -10)
+        panel.setFrameOrigin(NSPoint(x: x, y: startY))
+        ev.alphaValue = 0
+        bulkActionsWindow?.orderOut(nil)
+        bulkActionsWindow = panel
+        panel.orderFrontRegardless()
+        NSAnimationContext.runAnimationGroup { ctx in
+            ctx.duration = 0.16
+            (panel.animator()).setFrameOrigin(NSPoint(x: x, y: y))
+            ev.animator().alphaValue = 1
+        }
+    }
+    public func hideBulkActions() {
+        if let p = bulkActionsWindow, let ev = p.contentView as? NSVisualEffectView {
+            NSAnimationContext.runAnimationGroup { ctx in
+                ctx.duration = 0.12
+                ev.animator().alphaValue = 0
+            } completionHandler: {
+                p.orderOut(nil)
+                self.bulkActionsWindow = nil
+            }
+        } else {
+            bulkActionsWindow?.orderOut(nil)
+            bulkActionsWindow = nil
         }
     }
 }
