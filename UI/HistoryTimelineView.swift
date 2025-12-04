@@ -71,6 +71,7 @@ public struct HistoryTimelineView: View {
                                 .frame(width: 1, height: 1)
                                 .onAppear { if displayedCount < items.count { displayedCount = min(items.count, displayedCount + 60) } }
                         }
+                        .overlay(WheelScrollInterceptor())
                         .padding(.horizontal, 12)
                         .padding(.vertical, 8)
                     }
@@ -79,7 +80,6 @@ public struct HistoryTimelineView: View {
                             Color.clear.preference(key: ContainerFramePreferenceKey.self, value: g.frame(in: .named("PanelWindow")))
                         }
                     )
-                    .overlay(WheelScrollInterceptor())
                     .frame(maxWidth: .infinity)
                     .onChange(of: items.count) { c in displayedCount = min(c, 60) }
                 } else if layoutStyle == .grid {
@@ -841,13 +841,18 @@ private struct WheelScrollInterceptor: NSViewRepresentable {
             postsBoundsChangedNotifications = true
         }
         required init?(coder: NSCoder) { super.init(coder: coder) }
+        override func viewDidMoveToSuperview() {
+            super.viewDidMoveToSuperview()
+            scrollView = enclosingScrollView ?? findScrollView()
+            if let s = superview { frame = s.bounds }
+        }
         override func viewWillMove(toWindow newWindow: NSWindow?) {
             if let m = monitor { NSEvent.removeMonitor(m); monitor = nil }
             super.viewWillMove(toWindow: newWindow)
         }
         override func viewDidMoveToWindow() {
             super.viewDidMoveToWindow()
-            scrollView = findScrollView()
+            scrollView = enclosingScrollView ?? findScrollView()
             if let s = superview { frame = s.bounds }
             installScrollMonitor()
         }
@@ -863,22 +868,23 @@ private struct WheelScrollInterceptor: NSViewRepresentable {
             monitor = NSEvent.addLocalMonitorForEvents(matching: [.scrollWheel]) { [weak self] event in
                 guard let self = self else { return event }
                 guard event.window == self.window else { return event }
-                guard let sv = self.scrollView ?? self.findScrollView() else { return event }
+                guard let sv = self.scrollView ?? self.enclosingScrollView ?? self.findScrollView() else { return event }
                 if let s = self.superview {
                     let p = s.convert(event.locationInWindow, from: nil)
                     if !s.bounds.contains(p) { return event }
                 }
+                let precise = event.hasPreciseScrollingDeltas
+                if precise { return event }
                 let dy = event.scrollingDeltaY
-                if dy != 0 {
-                    let inverted = event.isDirectionInvertedFromDevice
-                    let delta = inverted ? dy : -dy
-                    var origin = sv.contentView.bounds.origin
-                    origin.x = max(0, min(origin.x + delta, self.maxContentOffsetX(for: sv)))
-                    sv.contentView.setBoundsOrigin(origin)
-                    sv.reflectScrolledClipView(sv.contentView)
-                    return nil
-                }
-                return event
+                if dy == 0 { return event }
+                let inverted = event.isDirectionInvertedFromDevice
+                let factor: CGFloat = 18.0
+                let delta = (inverted ? -dy : dy) * factor
+                var origin = sv.contentView.bounds.origin
+                origin.x = max(0, min(origin.x + delta, self.maxContentOffsetX(for: sv)))
+                sv.contentView.setBoundsOrigin(origin)
+                sv.reflectScrolledClipView(sv.contentView)
+                return nil
             }
         }
         private func maxContentOffsetX(for sv: NSScrollView) -> CGFloat {

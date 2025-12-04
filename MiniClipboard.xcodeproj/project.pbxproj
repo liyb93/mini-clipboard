@@ -30,9 +30,9 @@
 		A100001015 /* PanelRootView.swift in Sources */ = {isa = PBXBuildFile; fileRef = A100000205 /* PanelRootView.swift */; };
 		A100001016 /* WindowDragHandle.swift in Sources */ = {isa = PBXBuildFile; fileRef = A100000206 /* WindowDragHandle.swift */; };
 		A100001017 /* ShortcutRecorder.swift in Sources */ = {isa = PBXBuildFile; fileRef = A100000207 /* ShortcutRecorder.swift */; };
-		A10000101A /* PreviewService.swift in Sources */ = {isa = PBXBuildFile; fileRef = A100000307 /* PreviewService.swift */; };
 		A100001018 /* public in Resources */ = {isa = PBXBuildFile; fileRef = A100000F10 /* public */; };
 		A100001019 /* logo.icns in Resources */ = {isa = PBXBuildFile; fileRef = A100000F11 /* logo.icns */; };
+		A10000101A /* PreviewService.swift in Sources */ = {isa = PBXBuildFile; fileRef = A100000307 /* PreviewService.swift */; };
 		A10000101B /* Localization.swift in Sources */ = {isa = PBXBuildFile; fileRef = A100000308 /* Localization.swift */; };
 		A10000101C /* Localizable.strings in Resources */ = {isa = PBXBuildFile; fileRef = A100001020 /* Localizable.strings */; };
 /* End PBXBuildFile section */
@@ -71,13 +71,6 @@
 		A100001021 /* en */ = {isa = PBXFileReference; lastKnownFileType = text.plist.strings; name = en; path = en.lproj/Localizable.strings; sourceTree = "<group>"; };
 		A100001022 /* zh_CN */ = {isa = PBXFileReference; lastKnownFileType = text.plist.strings; name = zh_CN; path = zh_CN.lproj/Localizable.strings; sourceTree = "<group>"; };
 /* End PBXFileReference section */
-
-/* Begin PBXVariantGroup section */
-		A100001020 /* Localizable.strings */ = {isa = PBXVariantGroup; children = (
-			A100001021 /* en */,
-			A100001022 /* zh_CN */,
-		); name = Localizable.strings; sourceTree = "<group>"; };
-/* End PBXVariantGroup section */
 
 /* Begin PBXFrameworksBuildPhase section */
 		A100000700 /* Frameworks */ = {
@@ -268,6 +261,18 @@
 			runOnlyForDeploymentPostprocessing = 0;
 		};
 /* End PBXSourcesBuildPhase section */
+
+/* Begin PBXVariantGroup section */
+		A100001020 /* Localizable.strings */ = {
+			isa = PBXVariantGroup;
+			children = (
+				A100001021 /* en */,
+				A100001022 /* zh_CN */,
+			);
+			name = Localizable.strings;
+			sourceTree = "<group>";
+		};
+/* End PBXVariantGroup section */
 
 /* Begin XCBuildConfiguration section */
 		A100001401 /* Debug */ = {
