@@ -28,8 +28,10 @@ public struct HistoryTimelineView: View {
     public let selectedIDs: Set<UUID>
     public let selectedOrder: [UUID]
     public let selectionMode: Bool
+    public let onDefaultAction: (ClipItem) -> Void
+    public let onDirectPaste: (ClipItem) -> Void
     @AppStorage("historyLayoutStyle") private var layoutStyleRaw: String = "horizontal"
-    public init(items: [ClipItem], boards: [Pinboard], defaultBoardID: UUID, currentBoardID: UUID?, onPaste: @escaping (ClipItem, Bool) -> Void, onAddToBoard: @escaping (ClipItem, UUID) -> Void, onDelete: @escaping (ClipItem) -> Void, selectedItemID: UUID?, onSelect: @escaping (ClipItem) -> Void, onRename: @escaping (ClipItem, String) -> Void, scrollOnSelection: Bool, selectedIDs: Set<UUID>, selectedOrder: [UUID], selectionMode: Bool, onSelectedItemFrame: ((CGRect?) -> Void)? = nil) {
+    public init(items: [ClipItem], boards: [Pinboard], defaultBoardID: UUID, currentBoardID: UUID?, onPaste: @escaping (ClipItem, Bool) -> Void, onAddToBoard: @escaping (ClipItem, UUID) -> Void, onDelete: @escaping (ClipItem) -> Void, selectedItemID: UUID?, onSelect: @escaping (ClipItem) -> Void, onRename: @escaping (ClipItem, String) -> Void, scrollOnSelection: Bool, selectedIDs: Set<UUID>, selectedOrder: [UUID], selectionMode: Bool, onDefaultAction: @escaping (ClipItem) -> Void, onDirectPaste: @escaping (ClipItem) -> Void, onSelectedItemFrame: ((CGRect?) -> Void)? = nil) {
         self.items = items
         self.boards = boards
         self.defaultBoardID = defaultBoardID
@@ -44,6 +46,8 @@ public struct HistoryTimelineView: View {
         self.selectedIDs = selectedIDs
         self.selectedOrder = selectedOrder
         self.selectionMode = selectionMode
+        self.onDefaultAction = onDefaultAction
+        self.onDirectPaste = onDirectPaste
         self.onSelectedItemFrame = onSelectedItemFrame
     }
     @State private var displayedCount: Int = 60
@@ -57,7 +61,7 @@ public struct HistoryTimelineView: View {
                     ScrollView(.horizontal) {
                         LazyHStack(spacing: 12) {
                             ForEach(displayedItems) { item in
-                                ItemCardView(item: item, boards: boards, defaultBoardID: defaultBoardID, currentBoardID: currentBoardID, onPaste: onPaste, onAddToBoard: onAddToBoard, onDelete: onDelete, selected: (selectedItemID == item.id), multiSelected: selectedIDs.contains(item.id), selectionMode: selectionMode, selectionOrder: selectedOrder, onSelect: onSelect, onRename: onRename, cardWidth: cardWidth)
+                                ItemCardView(item: item, boards: boards, defaultBoardID: defaultBoardID, currentBoardID: currentBoardID, onPaste: onPaste, onAddToBoard: onAddToBoard, onDelete: onDelete, selected: (selectedItemID == item.id), multiSelected: selectedIDs.contains(item.id), selectionMode: selectionMode, selectionOrder: selectedOrder, onSelect: onSelect, onRename: onRename, onDefaultAction: onDefaultAction, onDirectPaste: onDirectPaste, cardWidth: cardWidth)
                                     .equatable()
                                     .id(item.id)
                                     .background(
@@ -86,7 +90,7 @@ public struct HistoryTimelineView: View {
                     ScrollView {
                         LazyVGrid(columns: gridColumns, alignment: .leading, spacing: 12) {
                             ForEach(displayedItems) { item in
-                                ItemCardView(item: item, boards: boards, defaultBoardID: defaultBoardID, currentBoardID: currentBoardID, onPaste: onPaste, onAddToBoard: onAddToBoard, onDelete: onDelete, selected: (selectedItemID == item.id), multiSelected: selectedIDs.contains(item.id), selectionMode: selectionMode, selectionOrder: selectedOrder, onSelect: onSelect, onRename: onRename, cardWidth: cardWidth)
+                                ItemCardView(item: item, boards: boards, defaultBoardID: defaultBoardID, currentBoardID: currentBoardID, onPaste: onPaste, onAddToBoard: onAddToBoard, onDelete: onDelete, selected: (selectedItemID == item.id), multiSelected: selectedIDs.contains(item.id), selectionMode: selectionMode, selectionOrder: selectedOrder, onSelect: onSelect, onRename: onRename, onDefaultAction: onDefaultAction, onDirectPaste: onDirectPaste, cardWidth: cardWidth)
                                     .equatable()
                                     .id(item.id)
                                     .background(
@@ -114,7 +118,7 @@ public struct HistoryTimelineView: View {
                     ScrollView {
                         LazyVStack(alignment: .leading, spacing: 12) {
                             ForEach(displayedItems) { item in
-                                ItemCardView(item: item, boards: boards, defaultBoardID: defaultBoardID, currentBoardID: currentBoardID, onPaste: onPaste, onAddToBoard: onAddToBoard, onDelete: onDelete, selected: (selectedItemID == item.id), multiSelected: selectedIDs.contains(item.id), selectionMode: selectionMode, selectionOrder: selectedOrder, onSelect: onSelect, onRename: onRename, cardWidth: cardWidth)
+                                ItemCardView(item: item, boards: boards, defaultBoardID: defaultBoardID, currentBoardID: currentBoardID, onPaste: onPaste, onAddToBoard: onAddToBoard, onDelete: onDelete, selected: (selectedItemID == item.id), multiSelected: selectedIDs.contains(item.id), selectionMode: selectionMode, selectionOrder: selectedOrder, onSelect: onSelect, onRename: onRename, onDefaultAction: onDefaultAction, onDirectPaste: onDirectPaste, cardWidth: cardWidth)
                                     .equatable()
                                     .id(item.id)
                                     .background(
@@ -195,12 +199,15 @@ private struct ItemCardView: View, Equatable {
     let selectionOrder: [UUID]
     let onSelect: (ClipItem) -> Void
     let onRename: (ClipItem, String) -> Void
+    let onDefaultAction: (ClipItem) -> Void
+    let onDirectPaste: (ClipItem) -> Void
     var cardWidth: CGFloat = 240
     @State private var hovering = false
     @State private var showNamePopover = false
     @State private var nameInput: String = ""
     @FocusState private var nameFocused: Bool
     @State private var hoverPaste = false
+    @State private var hoverDirectPaste = false
     @State private var hoverPlain = false
     @State private var hoverDelete = false
     @State private var hoverMenu = false
@@ -296,6 +303,20 @@ private struct ItemCardView: View, Equatable {
                             }
                             .help(L("timeline.help.pastePlain"))
 
+                            Button { onDirectPaste(item) } label: {
+                                Image(systemName: "keyboard")
+                                    .font(.system(size: 14, weight: .semibold))
+                                    .foregroundColor(.orange)
+                                    .scaleEffect(hoverDirectPaste ? 1.2 : 1.0)
+                                    .animation(.spring(response: 0.2, dampingFraction: 0.85), value: hoverDirectPaste)
+                            }
+                            .buttonStyle(.borderless)
+                            .onHover { h in
+                                hoverDirectPaste = h
+                                if h { NSCursor.pointingHand.set() } else { NSCursor.arrow.set() }
+                            }
+                            .help(L("timeline.help.directPaste"))
+
                             Button { onDelete(item) } label: {
                                 Image(systemName: "trash")
                                     .font(.system(size: 14, weight: .semibold))
@@ -387,7 +408,7 @@ private struct ItemCardView: View, Equatable {
             // .onHover { hovering = $0 }
             // .animation(.spring(response: 0.35, dampingFraction: 0.85), value: hovering)
             .animation(.spring(dampingFraction: 0.85), value: isSelected)
-            .highPriorityGesture(TapGesture(count: 2).onEnded { onPaste(item, false) })
+            .highPriorityGesture(TapGesture(count: 2).onEnded { onDefaultAction(item) })
             .simultaneousGesture(TapGesture(count: 1).onEnded { onSelect(item) })
         }
     }

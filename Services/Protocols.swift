@@ -27,6 +27,9 @@ public protocol IndexStoreProtocol {
 // 粘贴服务协议
 public protocol PasteServiceProtocol {
     func paste(_ item: ClipItem, plainText: Bool)
+    func directPaste(_ item: ClipItem)
+    func checkAccessibilityPermission() -> Bool
+    func requestAccessibilityPermission()
     func activateStack(directionAsc: Bool)
     func deactivateStack()
     func pushToStack(_ item: ClipItem)

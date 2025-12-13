@@ -5,6 +5,9 @@
 
 "settings.title" = "设置";
 "settings.section.general" = "通用";
+"settings.defaultAction" = "默认动作";
+"defaultAction.copy" = "复制到剪贴板";
+"defaultAction.paste" = "直接粘贴";
 "settings.retentionDays" = "保留天数";
 "settings.maxItems" = "保留条数";
 "settings.appLanguage" = "应用语言";
@@ -47,6 +50,7 @@
 "timeline.rename.cancel" = "取消";
 "timeline.count.chars" = "字符";
 "timeline.help.copy" = "复制到剪贴板";
+"timeline.help.directPaste" = "直接粘贴";
 "timeline.help.pastePlain" = "以纯文本复制";
 "timeline.help.delete" = "删除";
 "timeline.help.addToBoard" = "添加至分组";
@@ -68,6 +72,7 @@
 
 "panel.selection.count" = "已选 %d 项";
 "panel.selection.copyPlainText" = "复制为纯文本";
+"panel.selection.directPaste" = "直接粘贴";
 "panel.selection.copyRichText" = "复制为图文";
 "panel.selection.deleteSelected" = "删除所选";
 "panel.selection.addToBoard" = "加入分组";

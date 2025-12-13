@@ -1,5 +1,6 @@
 import AppKit
 import Foundation
+import Carbon
 
 // 粘贴服务：负责将 ClipItem 写入系统粘贴板并触发 Command+V
 public final class PasteService: PasteServiceProtocol {
@@ -10,6 +11,34 @@ public final class PasteService: PasteServiceProtocol {
     public func paste(_ item: ClipItem, plainText: Bool) {
         // 单次粘贴（可选择纯文本）
         writeToPasteboard(item, plainText: plainText)
+    }
+    public func directPaste(_ item: ClipItem) {
+        writeToPasteboard(item, plainText: false)
+        triggerPasteCommand()
+    }
+    
+    public func triggerPasteCommand() {
+        // Delay to allow previous app to activate (panel hide animation is ~0.15s)
+        DispatchQueue.main.asyncAfter(deadline: .now() + 0.3) {
+            let source = CGEventSource(stateID: .hidSystemState)
+            let vKeyCode: CGKeyCode = 0x09 // kVK_ANSI_V
+            
+            let keyDown = CGEvent(keyboardEventSource: source, virtualKey: vKeyCode, keyDown: true)
+            let keyUp = CGEvent(keyboardEventSource: source, virtualKey: vKeyCode, keyDown: false)
+            
+            keyDown?.flags = .maskCommand
+            keyUp?.flags = .maskCommand
+            
+            keyDown?.post(tap: .cghidEventTap)
+            keyUp?.post(tap: .cghidEventTap)
+        }
+    }
+    public func checkAccessibilityPermission() -> Bool {
+        return AXIsProcessTrusted()
+    }
+    public func requestAccessibilityPermission() {
+        let options = [kAXTrustedCheckOptionPrompt.takeUnretainedValue() as String: true]
+        AXIsProcessTrustedWithOptions(options as CFDictionary)
     }
     // 开启栈式粘贴，asc 控制顺序（正序/倒序）
     public func activateStack(directionAsc: Bool) { stackActive = true; asc = directionAsc }

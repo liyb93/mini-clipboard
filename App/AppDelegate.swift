@@ -83,12 +83,12 @@ final class AppDelegate: NSObject, NSApplicationDelegate, NSWindowDelegate {
     @objc func openSettings() {
         NSApp.activate(ignoringOtherApps: true)
         if preferencesWindow == nil {
-            let w = NSWindow(contentRect: NSRect(x: 0, y: 0, width: 600, height: 560), styleMask: [.titled, .closable, .miniaturizable, .resizable], backing: .buffered, defer: false)
+            let w = NSWindow(contentRect: NSRect(x: 0, y: 0, width: 660, height: 560), styleMask: [.titled, .closable, .miniaturizable, .resizable], backing: .buffered, defer: false)
             w.title = L("window.settings.title")
             w.isReleasedWhenClosed = false
             w.delegate = self
             w.level = NSWindow.Level(rawValue: NSWindow.Level.statusBar.rawValue + 1)
-            w.minSize = NSSize(width: 480, height: 420)
+            w.minSize = NSSize(width: 600, height: 420)
             let hosting = NSHostingView(rootView: SettingsView())
             hosting.translatesAutoresizingMaskIntoConstraints = false
             let content = NSView()

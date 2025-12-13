@@ -5,6 +5,7 @@ import UniformTypeIdentifiers
 
 final class AppController: ObservableObject {
     let store: IndexStore
+    let settingsStore: SettingsStore
     let monitor: ClipboardMonitor
     let paste: PasteService
     let preview: PreviewService
@@ -20,7 +21,7 @@ final class AppController: ObservableObject {
     @Published var selectedIDs: Set<UUID> = []
     @Published var selectedOrder: [UUID] = []
     @Published var selectionMode: Bool = false
-    private var selectionAnchorID: UUID?
+    @Published var selectionAnchorID: UUID?
     @Published var searchPopoverVisible: Bool = false
     @Published var searchBarWidth: CGFloat = 0
     @Published var sidebarWidth: CGFloat = 180
@@ -28,6 +29,7 @@ final class AppController: ObservableObject {
     private var cancellables: Set<AnyCancellable> = []
     init() {
         store = IndexStore()
+        settingsStore = SettingsStore()
         monitor = ClipboardMonitor()
         paste = PasteService()
         hotkeys = HotkeyService()
@@ -514,9 +516,69 @@ final class AppController: ObservableObject {
     }
     private func confirmSelectionAndPaste() {
         if let id = selectedItemID, let item = items.first(where: { $0.id == id }) {
-            pasteItem(item, plain: false)
+            onDefaultAction(item)
         } else if let first = items.first {
-            pasteItem(first, plain: false)
+            onDefaultAction(first)
+        }
+    }
+    
+    func directPasteItem(_ item: ClipItem) {
+        if paste.checkAccessibilityPermission() {
+            // Direct paste
+            panel.hide()
+            monitor.suppressCaptures(for: 1.0)
+            paste.directPaste(item)
+            store.moveToFront(item.id)
+            refresh()
+        } else {
+            showAccessibilityAlert()
+        }
+    }
+    
+    func directPasteSelected() {
+        if paste.checkAccessibilityPermission() {
+            let ids = Array(selectedIDs)
+            guard !ids.isEmpty else { return }
+            let orderedIDs = selectedOrder.filter { selectedIDs.contains($0) }
+            let finalIDs = orderedIDs.isEmpty ? ids : orderedIDs
+            let itemsToCopy = finalIDs.compactMap { id in items.first(where: { $0.id == id }) }
+            let parts: [String] = itemsToCopy.map { plainText(of: $0) }
+            let joined = parts.joined(separator: "\n\n")
+            
+            let pb = NSPasteboard.general
+            pb.clearContents()
+            pb.setString(joined, forType: .string)
+            
+            panel.hide()
+            monitor.suppressCaptures(for: 1.0)
+            paste.triggerPasteCommand()
+            clearSelection()
+        } else {
+            showAccessibilityAlert()
+        }
+    }
+    
+    private func showAccessibilityAlert() {
+        let alert = NSAlert()
+        alert.messageText = L("alert.accessibility.title")
+        alert.informativeText = L("alert.accessibility.message")
+        alert.addButton(withTitle: L("alert.accessibility.openSettings"))
+        alert.addButton(withTitle: L("alert.cancel"))
+        let resp = alert.runModal()
+        if resp == .alertFirstButtonReturn {
+            if let url = URL(string: "x-apple.systempreferences:com.apple.preference.security?Privacy_Accessibility") {
+                NSWorkspace.shared.open(url)
+            }
+        }
+    }
+
+    func onDefaultAction(_ item: ClipItem) {
+        let settings = settingsStore.load()
+        if settings.defaultAction == .paste {
+            directPasteItem(item)
+        } else {
+            // Default copy behavior
+            pasteItem(item, plain: false)
         }
     }
 }

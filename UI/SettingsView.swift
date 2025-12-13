@@ -62,7 +62,7 @@ import AppKit
                             Text(L("appearance.dark")).tag(AppearanceMode.dark)
                         }
                         .pickerStyle(.segmented)
-                        .frame(width: 160)
+                        .frame(width: 190)
                     }
                     .padding(.vertical, 6)
                     .padding(.horizontal, 8)
@@ -76,7 +76,21 @@ import AppKit
                             Text(L("language.en")).tag("en")
                         }
                         .pickerStyle(.segmented)
-                        .frame(width: 160)
+                        .frame(width: 190)
+                    }
+                    .padding(.vertical, 6)
+                    .padding(.horizontal, 8)
+                    HStack {
+                        Text(L("settings.defaultAction"))
+                            .font(.system(size: 13))
+                            .frame(width: 80, alignment: .leading)
+                        Spacer()
+                        Picker("", selection: $settings.defaultAction) {
+                            Text(L("defaultAction.copy")).tag(DefaultAction.copy)
+                            Text(L("defaultAction.paste")).tag(DefaultAction.paste)
+                        }
+                        .pickerStyle(.segmented)
+                        .frame(width: 190)
                     }
                     .padding(.vertical, 6)
                     .padding(.horizontal, 8)
@@ -91,7 +105,7 @@ import AppKit
                             Text(L("settings.historyLayout.vertical")).tag(HistoryLayoutStyle.vertical)
                         }
                         .pickerStyle(.segmented)
-                        .frame(width: 160)
+                        .frame(width: 190)
                     }
                     .padding(.vertical, 6)
                     .padding(.horizontal, 8)
@@ -108,13 +122,13 @@ import AppKit
                                         Text(L("settings.panel.width"))
                                             .font(.system(size: 12))
                                     Slider(value: $panelGridWidthPercent, in: 40...100, step: 1) { Text("") }
-                                            .frame(width: 160)
+                                            .frame(width: 190)
                                     }
                                     VStack(alignment: .leading, spacing: 4) {
                                         Text(L("settings.panel.height"))
                                             .font(.system(size: 12))
                                         Slider(value: $panelGridHeightPercent, in: 40...100, step: 1) { Text("") }
-                                            .frame(width: 160)
+                                            .frame(width: 190)
                                     }
                                 }
                             case .horizontal:
@@ -124,12 +138,12 @@ import AppKit
                                     Slider(value: $panelPositionVertical, in: -100...100, step: 1) {
                                         Text("")
                                     }
-                                    .frame(width: 160)
+                                    .frame(width: 190)
                                     Text(L("settings.panel.length"))
                                         .font(.system(size: 12))
                                         .padding(.top, 4)
                                     Slider(value: $panelHorizontalWidthPercent, in: 40...100, step: 1) { Text("") }
-                                        .frame(width: 160)
+                                        .frame(width: 190)
                                 }
                             case .vertical:
                                 VStack(alignment: .leading, spacing: 4) {
@@ -138,12 +152,12 @@ import AppKit
                                     Slider(value: $panelPositionHorizontal, in: -100...100, step: 1) {
                                         Text("")
                                     }
-                                    .frame(width: 160)
+                                    .frame(width: 190)
                                     Text(L("settings.panel.height"))
                                         .font(.system(size: 12))
                                         .padding(.top, 4)
                                     Slider(value: $panelVerticalHeightPercent, in: 40...100, step: 1) { Text("") }
-                                        .frame(width: 160)
+                                        .frame(width: 190)
                                 }
                             }
                         }
@@ -156,7 +170,7 @@ import AppKit
                             .frame(width: 80, alignment: .leading)
                         Spacer()
                         Slider(value: $panelCornerRadius, in: 0...48, step: 1) { Text("") }
-                            .frame(width: 160)
+                            .frame(width: 190)
                     }
                     .padding(.vertical, 6)
                     .padding(.horizontal, 8)
@@ -180,7 +194,7 @@ import AppKit
                             .frame(width: 80, alignment: .leading)
                         Spacer()
                         ShortcutRecorder(shortcut: Binding(get: { settings.shortcuts.showPanel }, set: { settings.shortcuts.showPanel = $0 }))
-                            .frame(width: 160, height: 22)
+                            .frame(width: 190, height: 22)
                     }
                     .padding(.vertical, 6)
                     .padding(.horizontal, 8)
@@ -221,7 +235,7 @@ import AppKit
         }
         .background(AppTheme.panelBackground)
 
-        .frame(maxWidth: 360)
+        .frame(maxWidth: 400)
         .controlSize(.small)
         .onAppear { settings = settingsStore.load() }
         .onChange(of: appLanguage) { _ in }

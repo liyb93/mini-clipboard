@@ -21,6 +21,11 @@ public enum AppearanceMode: String, Codable, CaseIterable {
     case system
 }
 
+public enum DefaultAction: String, Codable, CaseIterable {
+    case copy
+    case paste
+}
+
 // 搜索过滤条件：按类型与来源应用过滤
 public struct SearchFilters: Codable, Equatable {
     public var types: [ClipType]
