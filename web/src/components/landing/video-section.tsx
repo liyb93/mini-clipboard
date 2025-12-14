@@ -1,15 +1,18 @@
 "use client"
+import { useLanguage } from "@/i18n/context"
 
 export function VideoSection() {
+  const { t } = useLanguage()
+
   return (
     <section className="w-full bg-muted/50 py-24 lg:py-32">
       <div className="container mx-auto px-4 md:px-6">
         <div className="flex flex-col items-center justify-center space-y-4 text-center mb-12">
           <h2 className="text-3xl font-bold tracking-tighter sm:text-5xl">
-            30 秒，看懂它的强大
+            {t.video.title}
           </h2>
           <p className="max-w-[700px] text-gray-500 md:text-xl/relaxed dark:text-gray-400">
-            无需繁琐配置，安装即用。看看 Mini Clipboard 如何加速你的日常工作流。
+            {t.video.desc}
           </p>
         </div>
         
@@ -24,7 +27,7 @@ export function VideoSection() {
             poster="/image/cover.png"
           >
             <source src="/video/demo2.mp4" type="video/mp4" />
-            您的浏览器不支持视频播放。
+            {t.video.unsupported}
           </video>
         </div>
       </div>

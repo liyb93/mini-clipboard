@@ -22,6 +22,7 @@
 
 ## 界面预览
 ![列表布局](docs/image/list_mode.png)
+![网格布局](docs/image/grid_mode.png)
 查看演示视频：👇
 [![演示视频](docs/image/cover.png)](https://youtu.be/ID8JOoSwYC8)
 
