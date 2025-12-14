@@ -96,6 +96,24 @@ export const translations = {
         },
       ],
     },
+    installation: {
+      title: "Installation Guide",
+      step1: {
+        pre: "Download the latest `.dmg` from ",
+        link: "Releases",
+        post: ".",
+      },
+      step2: "Open the downloaded file and drag `Mini Clipboard.app` into the `Applications` folder.",
+      step3: {
+        title: "For the first installation, you need to allow apps from known developers.",
+        items: [
+          "Open \"System Settings\" → \"Privacy & Security\" → \"Security\"",
+          "Click \"Open Anyway\" or confirm allowing `Mini Clipboard`.",
+        ],
+      },
+      step4: "Launch `Mini Clipboard` from the \"Applications\" folder.",
+      imageAlt: "Installation Settings",
+    },
     footer: {
       desc1: "A modern clipboard management tool designed for macOS.",
       desc2: "Make every copy and paste more valuable.",
@@ -205,6 +223,24 @@ export const translations = {
           a: "Mini Clipboard 支持 macOS 12.0 (Monterey) 及以上版本。专为 Apple Silicon (M1/M2/M3) 芯片优化，提供流畅的原生体验。",
         },
       ],
+    },
+    installation: {
+      title: "安装指南",
+      step1: {
+        pre: "从 ",
+        link: "Releases",
+        post: " 下载最新的 `.dmg` 文件。",
+      },
+      step2: "打开下载的文件，将 `Mini Clipboard.app` 拖入 `应用程序` 文件夹。",
+      step3: {
+        title: "首次安装时，您需要允许来自已知开发者的应用。",
+        items: [
+          "打开 “系统设置” → “隐私与安全性” → “安全性”",
+          "点击 “仍要打开” 或确认允许 `Mini Clipboard`。",
+        ],
+      },
+      step4: "从 “应用程序” 文件夹启动 `Mini Clipboard`。",
+      imageAlt: "安装设置",
     },
     footer: {
       desc1: "为 macOS 设计的现代化剪贴板管理工具。",

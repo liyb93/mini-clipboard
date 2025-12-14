@@ -4,6 +4,7 @@ import { FeaturesGrid } from "@/components/landing/features-grid"
 import { VideoSection } from "@/components/landing/video-section"
 import { FAQSection } from "@/components/landing/faq-section"
 import { SiteFooter } from "@/components/landing/site-footer"
+import { InstallGuide } from "@/components/landing/install-guide"
 
 export default function Home() {
   return (
@@ -13,6 +14,7 @@ export default function Home() {
         <HeroSection />
         <FeaturesGrid />
         <VideoSection />
+        <InstallGuide />
         <FAQSection />
       </main>
       <SiteFooter />

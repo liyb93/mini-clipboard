@@ -5,18 +5,35 @@
 Lightweight, elegant macOS clipboard manager. Capture history, browse by timeline, pinboards and groups, direct paste, quick paste, instant search, and more — helping you paste content across apps faster.
 
 ## Features
-- History capture: automatically collects text, links, images, files, colors, and more
-- Timeline browsing: horizontal list and grid layouts, quick preview and rename
-- Pinboards and groups: create/rename/color pinboards; history and pins are separate
-- Direct paste: writes into the system clipboard, supports plain-text paste
-- Search and filters: keyword + type/source-app filters, instant-as-you-type
-- Settings and shortcuts: history retention period, layout toggle, shortcut mapping
+- History capture: Automatically collects text, links, images, files, colors, and more
+- Timeline browsing: Horizontal list, vertical list, and grid layouts; quick preview and rename
+- Pinboards and groups: Create/rename/color pinboards; history and pins are separate
+- Direct paste: Double-click to quick copy/paste, writes into system clipboard, supports plain-text paste
+- Search and filters: Keyword + type/source-app filters, instant-as-you-type search
+- Settings and shortcuts: History retention period, layout toggle, shortcut mapping, panel position adjustment
+
+## Keys
+- Panel: `⇧+⌘+P` (Configurable)
+- Direct Paste: Double-click or Enter
+- Quick Preview: Space
+- Move: Arrow keys
+- Search: Any key
+- Multi-select: `Shift` or `Command` + Click
 
 ## UI Preview
-- Grid layout
-![Grid layout](docs/image/grid_mode.jpg)
-- List layout
-![List layout](docs/image/list_mode.jpg)
+![List layout](docs/image/list_mode.png)
+![Grid layout](docs/image/grid_mode.png)
+Watch the demo video: 👇
+[![Demo Video](docs/image/cover.png)](https://youtu.be/ID8JOoSwYC8)
+
+## Installation Guide
+1. Download the latest `.dmg` from [Releases](https://github.com/PGshen/mini-clipboard/releases).
+2. Open the downloaded file and drag `Mini Clipboard.app` into the `Applications` folder.
+3. For the first installation, you need to allow apps from known developers.
+   - Open "System Settings" → "Privacy & Security" → "Security"
+   - Click "Open Anyway" or confirm allowing `Mini Clipboard`.
+4. Launch `Mini Clipboard` from the "Applications" folder.
+![Installation Settings](docs/image/install_setting.png)
 
 ## Requirements
 - macOS 12+ (Apple Silicon native)
@@ -24,45 +41,45 @@ Lightweight, elegant macOS clipboard manager. Capture history, browse by timelin
 
 ## Quick Start
 ### Using Xcode
-- Open `MiniClipboard.xcodeproj`, select the `mini-clipboard` scheme, and run.
+- Open `MiniClipboard.xcodeproj`, select the `mini-clipboard` Scheme, and run directly.
 
 ### Using Makefile
 - Build Debug:
   - `make build`
-- Produce distributable `.app`:
+- Generate distributable `.app`:
   - `make app` → outputs to `dist/Mini Clipboard.app`
-- Create unsigned DMG:
+- Generate unsigned DMG:
   - `make dmg-unsigned` → outputs to `dist/Mini-Clipboard.dmg`
 - Full signing and notarization (requires developer certificate/account):
-  - Configure `DEVELOPER_ID`, `TEAM_ID`, `APPLE_ID`, `APP_PASSWORD` or `NOTARY_PROFILE`
+  - Configure `DEVELOPER_ID`, `TEAM_ID`, `APPLE_ID`, `APP_PASSWORD`, or `NOTARY_PROFILE`
   - `make package-signed`
 - Clean:
   - `make clean`
 
-### App Icon (optional)
-- Place source image `logo.png` under `public/` to generate the iconset and `logo.icns` in one step:
+### App Icon (Optional)
+- Place source image `logo.png` under `public/` to generate iconset and `logo.icns` in one step:
   - `make icon`
 - If ImageMagick is installed, rounded-rectangle icons are generated; otherwise square.
 
 ## Permissions & Privacy
-- Direct paste and the sequential paste stack require enabling the macOS “Accessibility” permission. The first run will guide you to open System Settings.
-- History retention defaults to 30 days and can be adjusted in Settings. Expired history items that are not pinned are cleaned automatically.
+- Direct paste and sequential paste stack require enabling "Accessibility" permissions. The first run will guide you to open System Settings.
+- History retention defaults to 30 days and can be adjusted in settings; expired unpinned history is automatically cleaned.
 
-## Default Shortcuts (editable in Settings)
+## Default Shortcuts (Configurable in Settings)
 - Panel: `⇧+⌘+P`
 
 ## Project Structure
-- `App/`: app entry, delegate, and panel window control
-- `Services/`: clipboard monitoring, hotkeys, paste, search, privacy rules
-- `Storage/`: history index and settings persistence
-- `UI/`: panel root view, history timeline, settings page and controls
-- `Models/`: data models and enums
-- `dist/`: build artifacts (`.app` and `.dmg`)
-- `public/`: app icon assets
-- `docs/`: requirements and technical design docs
+- `App/`: App entry, delegate, and panel window control
+- `Services/`: Clipboard monitoring, hotkeys, paste, search, privacy rules
+- `Storage/`: History index and settings persistence
+- `UI/`: Panel root view, history timeline, settings page, and controls
+- `Models/`: Data models and enums
+- `dist/`: Build artifacts (`.app` and `.dmg`)
+- `public/`: App icon assets
+- `docs/`: Requirements and technical design docs
 
 ## Developer Notes
-- Local data directory: `~/Library/Application Support/MiniClipboard/` (index and persistent content)
+- Local data directory: `~/Library/Application Support/MiniClipboard/` (index and persistent content).
 - Key modules:
   - Clipboard monitor (`Services/ClipboardMonitor.swift`)
   - Direct/stack paste (`Services/PasteService.swift`)
@@ -72,4 +89,3 @@ Lightweight, elegant macOS clipboard manager. Capture history, browse by timelin
 
 ## License
 - Open-source license: Apache License 2.0 (see `LICENSE`).
-
