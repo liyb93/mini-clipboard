@@ -29,8 +29,8 @@ public final class IndexStore: IndexStoreProtocol {
         loadSnapshot()
         let s = settingsStore.load()
         queue.sync {
-            cleanupExpiredItems(days: s.historyRetentionDays)
-            cleanupExceededItems(limit: s.historyMaxItems)
+            cleanupExpiredItems(days: s.historyRetentionDays.rawValue)
+            cleanupExceededItems(limit: s.historyMaxItems.rawValue)
         }
     }
     public func save(_ item: ClipItem) throws {
@@ -41,8 +41,8 @@ public final class IndexStore: IndexStoreProtocol {
             contentCache[persisted.id] = nil
             persist()
             let s = settingsStore.load()
-            cleanupExpiredItems(days: s.historyRetentionDays)
-            cleanupExceededItems(limit: s.historyMaxItems)
+            cleanupExpiredItems(days: s.historyRetentionDays.rawValue)
+            cleanupExceededItems(limit: s.historyMaxItems.rawValue)
         }
         queue.async { [weak self] in
             guard let self = self else { return }

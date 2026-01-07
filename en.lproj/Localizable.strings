@@ -23,6 +23,7 @@
 "settings.panel.height" = "Panel Height";
 "settings.panel.length" = "Panel Length";
 "settings.panel.cornerRadius" = "Panel Corner Radius";
+"settings.launchAtLogin" = "Launch At Login";
 "shortcuts.title" = "Shortcuts";
 "shortcuts.panel" = "Panel";
 "about.title" = "About";
@@ -33,6 +34,7 @@
 "panel.menu.panel" = "Panel";
 "panel.menu.settings" = "Settings";
 "panel.menu.quit" = "Quit";
+"alert.cancel" = "Cancel";
 "alert.accessibility.title" = "Accessibility permission required";
 "alert.accessibility.message" = "Please enable MiniClipboard in System Settings > Privacy & Security > Accessibility to use global paste and auto-hide features.";
 "alert.accessibility.openSettings" = "Open Settings";

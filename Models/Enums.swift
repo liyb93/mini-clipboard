@@ -35,3 +35,17 @@ public struct SearchFilters: Codable, Equatable {
         self.sourceApps = sourceApps
     }
 }
+
+public enum HistoryRetention: Int, Codable, CaseIterable {
+    case month = 30
+    case quarter = 90
+    case year = 365
+}
+
+public enum HistoryMaxItems: Int, Codable, CaseIterable {
+    case one = 100
+    case two = 200
+    case three = 300
+    case five = 500
+    case thousand = 1000
+}

@@ -562,10 +562,10 @@ final class AppController: ObservableObject {
         let alert = NSAlert()
         alert.messageText = L("alert.accessibility.title")
         alert.informativeText = L("alert.accessibility.message")
-        alert.addButton(withTitle: L("alert.accessibility.openSettings"))
         alert.addButton(withTitle: L("alert.cancel"))
+        alert.addButton(withTitle: L("alert.accessibility.openSettings"))
         let resp = alert.runModal()
-        if resp == .alertFirstButtonReturn {
+        if resp == .alertSecondButtonReturn {
             if let url = URL(string: "x-apple.systempreferences:com.apple.preference.security?Privacy_Accessibility") {
                 NSWorkspace.shared.open(url)
             }

@@ -22,15 +22,15 @@ public struct Shortcuts: Codable, Equatable {
 
 // 应用设置：历史保留、忽略应用、同步开关、隐私与快捷键
 public struct AppSettings: Codable, Equatable {
-    public var historyRetentionDays: Int
-    public var historyMaxItems: Int
+    public var historyRetentionDays: HistoryRetention
+    public var historyMaxItems: HistoryMaxItems
     public var ignoredApps: [String]
     public var syncEnabled: Bool
     public var privacy: PrivacySettings
     public var shortcuts: Shortcuts
     public var appearance: AppearanceMode
     public var defaultAction: DefaultAction
-    public init(historyRetentionDays: Int = 30, historyMaxItems: Int = 100, ignoredApps: [String] = [], syncEnabled: Bool = false, privacy: PrivacySettings = PrivacySettings(), shortcuts: Shortcuts = Shortcuts(), appearance: AppearanceMode = .system, defaultAction: DefaultAction = .copy) {
+    public init(historyRetentionDays: HistoryRetention = .month, historyMaxItems: HistoryMaxItems = .three, ignoredApps: [String] = [], syncEnabled: Bool = false, privacy: PrivacySettings = PrivacySettings(), shortcuts: Shortcuts = Shortcuts(), appearance: AppearanceMode = .system, defaultAction: DefaultAction = .copy) {
         self.historyRetentionDays = historyRetentionDays
         self.historyMaxItems = historyMaxItems
         self.ignoredApps = ignoredApps
@@ -54,8 +54,8 @@ public struct AppSettings: Codable, Equatable {
 
     public init(from decoder: Decoder) throws {
         let c = try decoder.container(keyedBy: CodingKeys.self)
-        historyRetentionDays = try c.decodeIfPresent(Int.self, forKey: .historyRetentionDays) ?? 30
-        historyMaxItems = try c.decodeIfPresent(Int.self, forKey: .historyMaxItems) ?? 500
+        historyRetentionDays = try c.decodeIfPresent(HistoryRetention.self, forKey: .historyRetentionDays) ?? .month
+        historyMaxItems = try c.decodeIfPresent(HistoryMaxItems.self, forKey: .historyMaxItems) ?? .three
         ignoredApps = try c.decodeIfPresent([String].self, forKey: .ignoredApps) ?? []
         syncEnabled = try c.decodeIfPresent(Bool.self, forKey: .syncEnabled) ?? false
         privacy = try c.decodeIfPresent(PrivacySettings.self, forKey: .privacy) ?? PrivacySettings()

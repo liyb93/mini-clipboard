@@ -23,6 +23,7 @@
 "settings.panel.height" = "面板高度";
 "settings.panel.length" = "面板长度";
 "settings.panel.cornerRadius" = "面板圆角";
+"settings.launchAtLogin" = "登录时启动";
 "shortcuts.title" = "快捷键";
 "shortcuts.panel" = "面板";
 "about.title" = "声明";
@@ -33,6 +34,7 @@
 "panel.menu.panel" = "面板";
 "panel.menu.settings" = "设置";
 "panel.menu.quit" = "退出";
+"alert.cancel" = "取消";
 "alert.accessibility.title" = "需要辅助权限";
 "alert.accessibility.message" = "请在系统设置的隐私与安全 > 辅助功能中为 MiniClipboard 开启权限，以使用全局粘贴和自动隐藏等功能。";
 "alert.accessibility.openSettings" = "打开设置";
