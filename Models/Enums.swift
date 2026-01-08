@@ -1,4 +1,5 @@
 import Foundation
+import SwiftUI
 
 // 剪贴类型枚举
 public enum ClipType: String, Codable, CaseIterable {
@@ -48,4 +49,42 @@ public enum HistoryMaxItems: Int, Codable, CaseIterable {
     case three = 300
     case five = 500
     case thousand = 1000
+}
+
+public enum SectionColor: String, CaseIterable {
+    case red = "red"
+    case orange = "orange"
+    case yellow = "yellow"
+    case green = "green"
+    case blue = "blue"
+    case purple = "purple"
+    case brown = "brown"
+    case gray = "gray"
+    case black = "black"
+    case mint = "mint"
+    case teal = "teal"
+    case cyan = "cyan"
+    case indigo = "indigo"
+
+    var color: Color {
+        switch self {
+        case .red: return .red
+        case .orange: return .orange
+        case .yellow: return .yellow
+        case .green: return .green
+        case .blue: return .blue
+        case .purple: return .purple
+        case .brown: return .brown
+        case .gray: return .gray
+        case .black: return .black
+        case .mint: return .mint
+        case .teal: return .teal
+        case .cyan: return .cyan
+        case .indigo: return .indigo
+        }
+    }
+
+    static var random: SectionColor {
+        return SectionColor.allCases.randomElement() ?? .red
+    }
 }

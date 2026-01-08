@@ -226,6 +226,7 @@ struct PanelRootView: View {
                                     Text(b.name)
                                 }
                             }
+                            .help(b.name)
                         }
                     } label: {
                         HStack(spacing: 8) {
@@ -274,14 +275,11 @@ struct PanelRootView: View {
                             .clipShape(RoundedRectangle(cornerRadius: 8))
                             .contentShape(Rectangle())
                             .contextMenu {
-                                if b.id == controller.store.defaultBoardID {
-                                    Text(L("panel.defaultBoard.uneditable"))
-                                } else {
-                                    Button(L("panel.editName")) { editingBoard = b; renameInput = b.name; showRenamePopover = true }
-                                    Button(L("panel.changeColor")) { editingBoard = b; colorInput = b.color ?? ""; showColorPopover = true }
-                                    Divider()
-                                    Button(L("panel.deleteBoard")) { try? controller.store.deletePinboard(b.id); controller.refresh() }
-                                }
+                                Button(L("panel.editName")) { editingBoard = b; renameInput = b.name; showRenamePopover = true }
+                                Button(L("panel.changeColor")) { editingBoard = b; colorInput = b.color ?? ""; showColorPopover = true }
+                                Divider()
+                                Button(L("panel.deleteBoard")) { try? controller.store.deletePinboard(b.id); controller.refresh() }
+                                    .disabled(b.id == controller.store.defaultBoardID)
                             }
                             .onTapGesture { controller.selectBoard(b.id) }
                             .popover(isPresented: Binding(get: { showRenamePopover && editingBoard?.id == b.id }, set: { v in showRenamePopover = v })) {
@@ -312,25 +310,16 @@ struct PanelRootView: View {
                             .popover(isPresented: Binding(get: { showColorPopover && editingBoard?.id == b.id }, set: { v in showColorPopover = v })) {
                                 VStack(alignment: .leading, spacing: 8) {
                                     Text(L("panel.boardColor.title")).font(.system(size: 13, weight: .medium))
-                                    HStack(spacing: 8) {
-                                        ForEach(["red","orange","yellow","green","blue","indigo","purple","pink"], id: \.self) { c in
-                                            Circle()
-                                                .fill(boardColor(Pinboard(name: "", color: c)))
-                                                .frame(width: 16, height: 16)
-                                                .onTapGesture {
-                                                    if let id = editingBoard?.id { controller.store.updatePinboardColor(id, color: c) }
-                                                    controller.refresh()
-                                                    showColorPopover = false
-                                                }
-                                        }
-                                        Button(L("panel.clear")) {
-                                            if let id = editingBoard?.id { controller.store.updatePinboardColor(id, color: nil) }
+                                    if let id = editingBoard?.id {
+                                        ColorPickerView(sectionColor: .init(get: {
+                                            guard let color = controller.store.getPinboardColor(id) else { return .red }
+                                            return SectionColor(rawValue: color) ?? .red
+                                        }, set: { color in
+                                            controller.store.updatePinboardColor(id, color: color.rawValue)
                                             controller.refresh()
                                             showColorPopover = false
-                                        }
+                                        }))
                                     }
-                                    TextField(L("panel.color.hexPlaceholder"), text: $colorInput)
-                                        .textFieldStyle(.roundedBorder)
                                     HStack {
                                         Spacer()
                                         Button(L("panel.cancel")) { showColorPopover = false }
@@ -345,6 +334,8 @@ struct PanelRootView: View {
                                 }
                                 .padding(12)
                                 .frame(width: 260)
+                                .focusable(true)
+                                .focusEffectDisabled()
                             }
                         }
                     }
@@ -503,7 +494,23 @@ struct PanelRootView: View {
     private var mainArea: some View {
         ZStack(alignment: .topLeading) {
             VStack(spacing: 0) {
-                HistoryTimelineView(items: controller.items, boards: controller.boards, defaultBoardID: controller.store.defaultBoardID, currentBoardID: controller.selectedBoardID, onPaste: { item, plain in controller.pasteItem(item, plain: plain) }, onAddToBoard: { item, bid in controller.addToBoard(item, bid) }, onDelete: { item in controller.deleteItem(item) }, selectedItemID: controller.selectedItemID, onSelect: { item in controller.onItemTapped(item) }, onRename: { item, name in controller.renameItem(item, name: name) }, scrollOnSelection: controller.selectionByKeyboard, selectedIDs: controller.selectedIDs, selectedOrder: controller.selectedOrder, selectionMode: controller.selectionMode, onDefaultAction: { item in controller.onDefaultAction(item) }, onDirectPaste: { item in controller.directPasteItem(item) }, onSelectedItemFrame: { rect in
+                HistoryTimelineView(items: controller.items,
+                                    boards: controller.boards,
+                                    defaultBoardID: controller.store.defaultBoardID,
+                                    currentBoardID: controller.selectedBoardID,
+                                    onPaste: { item, plain in controller.pasteItem(item, plain: plain) },
+                                    onAddToBoard: { item, bid in controller.addToBoard(item, bid) },
+                                    onDelete: { item in controller.deleteItem(item) },
+                                    selectedItemID: controller.selectedItemID,
+                                    onSelect: { item in controller.onItemTapped(item) },
+                                    onRename: { item, name in controller.renameItem(item, name: name) },
+                                    scrollOnSelection: controller.selectionByKeyboard,
+                                    selectedIDs: controller.selectedIDs,
+                                    selectedOrder: controller.selectedOrder,
+                                    selectionMode: controller.selectionMode,
+                                    onDefaultAction: { item in controller.onDefaultAction(item) },
+                                    onDirectPaste: { item in controller.directPasteItem(item) },
+                                    onSelectedItemFrame: { rect in
                     if let rect, let win = NSApp.keyWindow ?? NSApp.windows.first {
                         let windowHeight = win.contentView?.bounds.height ?? win.frame.size.height
                         let cocoaY = windowHeight - (rect.origin.y + rect.size.height)
@@ -548,7 +555,6 @@ struct PanelRootView: View {
         }
     }
     private func boardDisplayName(_ b: Pinboard) -> String {
-        if b.id == controller.store.defaultBoardID && b.name == "剪贴板" { return L("boards.default.displayName") }
         return b.name
     }
     private func reportSearchFrame(_ geo: GeometryProxy) {
@@ -563,25 +569,8 @@ struct PanelRootView: View {
     }
     private func boardColor(_ b: Pinboard) -> Color {
         guard let s = b.color?.trimmingCharacters(in: .whitespacesAndNewlines).lowercased(), !s.isEmpty else { return .accentColor }
-        switch s {
-        case "red": return .red
-        case "orange": return .orange
-        case "yellow": return .yellow
-        case "green": return .green
-        case "blue": return .blue
-        case "indigo": return .indigo
-        case "purple": return .purple
-        case "pink": return .pink
-        default:
-            let hex = s.hasPrefix("#") ? String(s.dropFirst()) : s
-            if hex.count == 6, let v = Int(hex, radix: 16) {
-                let r = Double((v >> 16) & 0xFF) / 255.0
-                let g = Double((v >> 8) & 0xFF) / 255.0
-                let b = Double(v & 0xFF) / 255.0
-                return Color(red: r, green: g, blue: b)
-            }
-            return .accentColor
-        }
+        let sectionColor = SectionColor(rawValue: s)
+        return sectionColor?.color ?? .red
     }
 }
 private struct BoardDotView: View {
@@ -610,17 +599,18 @@ private struct BoardDotView: View {
 private struct NewBoardPopoverContent: View {
     @ObservedObject var controller: AppController
     @Binding var newBoardName: String
+    @State private var sectionColor: SectionColor = SectionColor.red
     var onDismiss: () -> Void
     var body: some View {
         VStack(alignment: .leading, spacing: 8) {
             Text(L("panel.newBoard.title")).font(.system(size: 13, weight: .medium))
+            ColorPickerView(sectionColor: $sectionColor)
             TextField(L("panel.name.placeholder"), text: $newBoardName)
                 .textFieldStyle(.roundedBorder)
                 .onSubmit {
                     let name = newBoardName.trimmingCharacters(in: .whitespacesAndNewlines)
-                    let presetColors = ["red","orange","yellow","green","blue","indigo","purple","pink"]
-                    let randomColor = presetColors.randomElement()
-                    _ = controller.store.createPinboard(name: name.isEmpty ? L("panel.newBoard.title") : name, color: randomColor)
+                    let color = sectionColor.rawValue
+                    _ = controller.store.createPinboard(name: name.isEmpty ? L("panel.newBoard.title") : name, color: color)
                     controller.refresh()
                     onDismiss()
                     newBoardName = ""
@@ -630,9 +620,8 @@ private struct NewBoardPopoverContent: View {
                 Button(L("panel.cancel")) { onDismiss(); newBoardName = "" }
                 Button(L("panel.add")) {
                     let name = newBoardName.trimmingCharacters(in: .whitespacesAndNewlines)
-                    let presetColors = ["red","orange","yellow","green","blue","indigo","purple","pink"]
-                    let randomColor = presetColors.randomElement()
-                    _ = controller.store.createPinboard(name: name.isEmpty ? L("panel.newBoard.title") : name, color: randomColor)
+                    let color = sectionColor.rawValue
+                    _ = controller.store.createPinboard(name: name.isEmpty ? L("panel.newBoard.title") : name, color: color)
                     controller.refresh()
                     onDismiss()
                     newBoardName = ""
@@ -644,3 +633,34 @@ private struct NewBoardPopoverContent: View {
     }
 }
 // 搜索弹窗视图已移除，统一由顶部按钮弹出
+
+private struct ColorPickerView: View {
+    @Binding var sectionColor: SectionColor
+    init(sectionColor: Binding<SectionColor>) {
+        _sectionColor = sectionColor
+    }
+
+    var body: some View {
+        ScrollView(.horizontal) {
+            HStack {
+                ForEach(SectionColor.allCases, id: \.self) { c in
+                    ZStack {
+                        if c == sectionColor {
+                            Circle()
+                                .fill(.white)
+                                .frame(width: 16, height: 16)
+                        }
+                        Circle()
+                            .fill(c.color)
+                            .frame(width: c == sectionColor ? 14 : 16, height: c == sectionColor ? 14 : 16)
+                    }
+                    .onTapGesture {
+                        sectionColor = c
+                    }
+                }
+            }
+        }
+        .scrollIndicators(.hidden)
+        .frame(height: 44)
+    }
+}

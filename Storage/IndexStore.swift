@@ -1,4 +1,5 @@
 import Foundation
+import SwiftUI
 
 // 本地索引存储：维护剪贴历史、看板与关联关系，提供查询与置顶能力
 public final class IndexStore: IndexStoreProtocol {
@@ -8,6 +9,8 @@ public final class IndexStore: IndexStoreProtocol {
     private var contentCache: [UUID: String] = [:]
     private let queue = DispatchQueue(label: "store.queue", qos: .userInitiated)
     public private(set) var defaultBoardID: UUID
+    @AppStorage("defaultBoardIDString")
+    public private(set) var defaultBoardIDString: String = UUID().uuidString
     private let indexURL: URL
     private let contentDir: URL
     private let decoder = JSONDecoder()
@@ -134,7 +137,7 @@ public final class IndexStore: IndexStoreProtocol {
         return b.id
     }
     public func updatePinboardName(_ id: UUID, name: String) {
-        guard id != defaultBoardID else { return }
+//        guard id != defaultBoardID else { return }
         queue.sync {
             if let i = pinboards.firstIndex(where: { $0.id == id }) {
                 pinboards[i].name = name
@@ -143,13 +146,16 @@ public final class IndexStore: IndexStoreProtocol {
         }
     }
     public func updatePinboardColor(_ id: UUID, color: String?) {
-        guard id != defaultBoardID else { return }
+//        guard id != defaultBoardID else { return }
         queue.sync {
             if let i = pinboards.firstIndex(where: { $0.id == id }) {
                 pinboards[i].color = color
                 persist()
             }
         }
+    }
+    public func getPinboardColor(_ id: UUID) -> String? {
+        pinboards.first { $0.id == id }?.color
     }
     public func deletePinboard(_ id: UUID) throws {
         guard id != defaultBoardID else { return }
@@ -199,18 +205,20 @@ public final class IndexStore: IndexStoreProtocol {
             var m: [UUID: Set<UUID>] = [:]
             for (k, v) in snap.boardItems { m[k] = Set(v) }
             self.boardItems = m
-            if let def = pinboards.first(where: { $0.name == "剪贴板" }) {
+            if let def = pinboards.first(where: { $0.id.uuidString == defaultBoardIDString }) {
                 self.defaultBoardID = def.id
             } else {
-                let def = Pinboard(name: "剪贴板", color: nil, order: 0)
+                let def = Pinboard(name: L("boards.default.displayName"), color: nil, order: 0)
                 self.defaultBoardID = def.id
+                self.defaultBoardIDString = def.id.uuidString
                 pinboards.insert(def, at: 0)
                 persist()
             }
         } else {
             self.items = []
-            let def = Pinboard(name: "剪贴板", color: nil, order: 0)
+            let def = Pinboard(name: L("boards.default.displayName"), color: nil, order: 0)
             self.defaultBoardID = def.id
+            self.defaultBoardIDString = def.id.uuidString
             self.pinboards = [def]
             self.boardItems = [:]
             persist()
