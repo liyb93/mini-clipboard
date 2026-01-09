@@ -62,7 +62,7 @@
 "panel.cancel" = "Cancel";
 "panel.add" = "Add";
 "panel.search.placeholder" = "Search";
-"panel.defaultBoard.uneditable" = "Default board cannot be edited";
+"panel.defaultBoard.uneditable" = "Default board cannot be deleted";
 "panel.editName" = "Edit Name…";
 "panel.changeColor" = "Change Color…";
 "panel.deleteBoard" = "Delete Board";

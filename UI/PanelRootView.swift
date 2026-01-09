@@ -431,6 +431,79 @@ struct PanelRootView: View {
                                              color: boardColor(b),
                                              onTap: { controller.selectBoard(b.id) },
                                              helpText: boardDisplayName(b))
+                                .contextMenu {
+                                    Button(L("panel.editName")) {
+                                        editingBoard = b;
+                                        renameInput = b.name;
+                                        showRenamePopover = true
+                                    }
+                                    Button(L("panel.changeColor")) {
+                                        editingBoard = b;
+                                        colorInput = b.color ?? "";
+                                        showColorPopover = true
+                                    }
+                                    Divider()
+                                    Button(L(b.id == controller.store.defaultBoardID ? "panel.defaultBoard.uneditable" : "panel.deleteBoard")) {
+                                        try? controller.store.deletePinboard(b.id);
+                                        controller.refresh()
+                                    }
+                                    .disabled(b.id == controller.store.defaultBoardID)
+                                }
+                                .popover(isPresented: Binding(get: { showRenamePopover && editingBoard?.id == b.id }, set: { v in showRenamePopover = v })) {
+                                    VStack(alignment: .leading, spacing: 8) {
+                                        Text(L("panel.rename.title")).font(.system(size: 13, weight: .medium))
+                                        TextField(L("panel.name.placeholder"), text: $renameInput)
+                                            .textFieldStyle(.roundedBorder)
+                                            .onSubmit {
+                                                let name = renameInput.trimmingCharacters(in: .whitespacesAndNewlines)
+                                                if let id = editingBoard?.id { controller.store.updatePinboardName(id, name: name.isEmpty ? L("panel.rename.untitled") : name) }
+                                                controller.refresh()
+                                                showRenamePopover = false
+                                            }
+                                        HStack {
+                                            Spacer()
+                                            Button(L("panel.cancel")) { showRenamePopover = false }
+                                            Button(L("timeline.rename.save")) {
+                                                let name = renameInput.trimmingCharacters(in: .whitespacesAndNewlines)
+                                                if let id = editingBoard?.id { controller.store.updatePinboardName(id, name: name.isEmpty ? L("panel.rename.untitled") : name) }
+                                                controller.refresh()
+                                                showRenamePopover = false
+                                            }.keyboardShortcut(.defaultAction)
+                                        }
+                                    }
+                                    .padding(12)
+                                    .frame(width: 220)
+                                }
+                                .popover(isPresented: Binding(get: { showColorPopover && editingBoard?.id == b.id }, set: { v in showColorPopover = v })) {
+                                    VStack(alignment: .leading, spacing: 8) {
+                                        Text(L("panel.boardColor.title")).font(.system(size: 13, weight: .medium))
+                                        if let id = editingBoard?.id {
+                                            ColorPickerView(sectionColor: .init(get: {
+                                                guard let color = controller.store.getPinboardColor(id) else { return .red }
+                                                return SectionColor(rawValue: color) ?? .red
+                                            }, set: { color in
+                                                controller.store.updatePinboardColor(id, color: color.rawValue)
+                                                controller.refresh()
+                                                showColorPopover = false
+                                            }))
+                                        }
+                                        HStack {
+                                            Spacer()
+                                            Button(L("panel.cancel")) { showColorPopover = false }
+                                            Button(L("timeline.rename.save")) {
+                                                var s = colorInput.trimmingCharacters(in: .whitespacesAndNewlines)
+                                                if s.isEmpty { s = "" }
+                                                if let id = editingBoard?.id { controller.store.updatePinboardColor(id, color: s.isEmpty ? nil : s) }
+                                                controller.refresh()
+                                                showColorPopover = false
+                                            }.keyboardShortcut(.defaultAction)
+                                        }
+                                    }
+                                    .padding(12)
+                                    .frame(width: 260)
+                                    .focusable(true)
+                                    .focusEffectDisabled()
+                                }
                             }
                         }
                         .padding(.vertical, 6)

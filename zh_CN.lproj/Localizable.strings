@@ -62,7 +62,7 @@
 "panel.cancel" = "取消";
 "panel.add" = "添加";
 "panel.search.placeholder" = "搜索";
-"panel.defaultBoard.uneditable" = "默认分组不可更改";
+"panel.defaultBoard.uneditable" = "默认分组不可删除";
 "panel.editName" = "编辑名称…";
 "panel.changeColor" = "修改颜色…";
 "panel.deleteBoard" = "删除分组";
