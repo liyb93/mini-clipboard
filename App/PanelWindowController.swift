@@ -125,7 +125,7 @@ public final class PanelWindowController: NSObject, NSWindowDelegate, NSTextFiel
     private func targetOrigin(for size: NSSize) -> NSPoint {
         let s = activeScreen() ?? NSScreen.main
         guard let screen = s else { return NSPoint(x: 0, y: 0) }
-        let visible = screen.visibleFrame
+//        let visible = screen.visibleFrame
         let whole = screen.frame
         let menuOffset = NSStatusBar.system.thickness
         let raw = UserDefaults.standard.string(forKey: "historyLayoutStyle") ?? "horizontal"
@@ -288,7 +288,7 @@ public final class PanelWindowController: NSObject, NSWindowDelegate, NSTextFiel
         let newH = targetHeight()
         let newSize = NSSize(width: newW, height: newH)
         let newOrigin = targetOrigin(for: newSize)
-        var f = NSRect(origin: newOrigin, size: newSize)
+        let f = NSRect(origin: newOrigin, size: newSize)
         if animated {
             NSAnimationContext.runAnimationGroup { ctx in
                 ctx.duration = 0.12

@@ -265,8 +265,8 @@ public struct SettingsView: View {
             settings = settingsStore.load()
             launchAtLogin = SMAppService.mainApp.status == .enabled
         }
-        .onChange(of: appLanguage) { _ in }
-        .onChange(of: settings) { s in
+        .onChange(of: appLanguage) { _, _ in }
+        .onChange(of: settings) { _,s in
             try? settingsStore.save(s)
             HotkeyService.shared?.unregisterAll()
             HotkeyService.shared?.registerShowPanel()
@@ -274,9 +274,9 @@ public struct SettingsView: View {
             HotkeyService.shared?.registerStackToggle()
             AppTheme.applyAppearance(s.appearance)
         }
-        .onChange(of: panelPositionVertical) { _ in }
-        .onChange(of: panelPositionHorizontal) { _ in }
-        .onChange(of: launchAtLogin) { newValue in
+        .onChange(of: panelPositionVertical) { _, _ in }
+        .onChange(of: panelPositionHorizontal) { _, _ in }
+        .onChange(of: launchAtLogin) { _,newValue in
             if newValue {
                 try? SMAppService.mainApp.register()
             } else {

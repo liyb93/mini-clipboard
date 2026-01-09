@@ -46,12 +46,12 @@ struct PanelRootView: View {
             UserDefaults.standard.set(Double(sidebarWidth), forKey: "sidebarWidth")
             UserDefaults.standard.set(Double(lastExpandedSidebarWidth), forKey: "lastExpandedSidebarWidth")
         }
-        .onChange(of: sidebarWidth) { w in
+        .onChange(of: sidebarWidth) { _, w in
             controller.sidebarWidth = w
             UserDefaults.standard.set(Double(w), forKey: "sidebarWidth")
             controller.panel.updateLayoutHeight(animated: !isDragging)
         }
-        .onChange(of: sidebarCollapsed) { c in
+        .onChange(of: sidebarCollapsed) { _,c in
             if c {
                 lastExpandedSidebarWidth = max(lastExpandedSidebarWidth, sidebarWidth)
                 sidebarWidth = collapsedSidebarWidth
@@ -64,14 +64,14 @@ struct PanelRootView: View {
                 UserDefaults.standard.set(Double(lastExpandedSidebarWidth), forKey: "lastExpandedSidebarWidth")
             }
         }
-        .onChange(of: layoutStyleRaw) { _ in controller.panel.updateLayoutHeight(animated: true) }
-        .onChange(of: panelPositionVertical) { _ in controller.panel.updateLayoutHeight(animated: true) }
-        .onChange(of: panelPositionHorizontal) { _ in controller.panel.updateLayoutHeight(animated: true) }
-        .onChange(of: panelHorizontalWidthPercent) { _ in controller.panel.updateLayoutHeight(animated: true) }
-        .onChange(of: panelVerticalHeightPercent) { _ in controller.panel.updateLayoutHeight(animated: true) }
-        .onChange(of: panelGridWidthPercent) { _ in controller.panel.updateLayoutHeight(animated: true) }
-        .onChange(of: panelGridHeightPercent) { _ in controller.panel.updateLayoutHeight(animated: true) }
-        .onChange(of: panelCornerRadius) { _ in controller.panel.updateCornerRadius() }
+        .onChange(of: layoutStyleRaw) { _, _ in controller.panel.updateLayoutHeight(animated: true) }
+        .onChange(of: panelPositionVertical) { _, _ in controller.panel.updateLayoutHeight(animated: true) }
+        .onChange(of: panelPositionHorizontal) { _, _ in controller.panel.updateLayoutHeight(animated: true) }
+        .onChange(of: panelHorizontalWidthPercent) { _, _ in controller.panel.updateLayoutHeight(animated: true) }
+        .onChange(of: panelVerticalHeightPercent) { _, _ in controller.panel.updateLayoutHeight(animated: true) }
+        .onChange(of: panelGridWidthPercent) { _, _ in controller.panel.updateLayoutHeight(animated: true) }
+        .onChange(of: panelGridHeightPercent) { _, _ in controller.panel.updateLayoutHeight(animated: true) }
+        .onChange(of: panelCornerRadius) { _, _ in controller.panel.updateCornerRadius() }
         .frame(minWidth: minWidthForLayout, minHeight: 260)
     }
     private var toolbar: some View {
@@ -166,7 +166,7 @@ struct PanelRootView: View {
                         controller.searchBarWidth = geo.size.width
                         reportSearchFrame(geo)
                     }
-                    .onChange(of: geo.size.width) { w in
+                    .onChange(of: geo.size.width) { _, w in
                         controller.searchBarWidth = w
                         reportSearchFrame(geo)
                     }

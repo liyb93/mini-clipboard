@@ -85,7 +85,7 @@ public struct HistoryTimelineView: View {
                         }
                     )
                     .frame(maxWidth: .infinity)
-                    .onChange(of: items.count) { c in displayedCount = min(c, 60) }
+                    .onChange(of: items.count) { _, c in displayedCount = min(c, 60) }
                 } else if layoutStyle == .grid {
                     ScrollView {
                         LazyVGrid(columns: gridColumns, alignment: .leading, spacing: 12) {
@@ -113,7 +113,7 @@ public struct HistoryTimelineView: View {
                         }
                     )
                     .frame(maxWidth: .infinity)
-                    .onChange(of: items.count) { c in displayedCount = min(c, 60) }
+                    .onChange(of: items.count) { _, c in displayedCount = min(c, 60) }
                 } else {
                     ScrollView {
                         LazyVStack(alignment: .leading, spacing: 12) {
@@ -141,12 +141,12 @@ public struct HistoryTimelineView: View {
                         }
                     )
                     .frame(maxWidth: .infinity)
-                    .onChange(of: items.count) { c in displayedCount = min(c, 60) }
+                    .onChange(of: items.count) { _, c in displayedCount = min(c, 60) }
                 }
             }
             .onPreferenceChange(ItemFramePreferenceKey.self) { v in itemFrames = v }
             .onPreferenceChange(ContainerFramePreferenceKey.self) { v in containerFrame = v }
-            .onChange(of: selectedItemID) { id in
+            .onChange(of: selectedItemID) { _, id in
                 if let id, let idx = items.firstIndex(where: { $0.id == id }) {
                     displayedCount = min(items.count, max(displayedCount, idx + 1))
                     if scrollOnSelection && shouldScroll(to: id) {
@@ -155,7 +155,7 @@ public struct HistoryTimelineView: View {
                     updateAnchorRect()
                 }
             }
-            .onChange(of: itemFrames) { _ in updateAnchorRect() }
+            .onChange(of: itemFrames) { _, _ in updateAnchorRect() }
         }
     }
     private func shouldScroll(to id: UUID) -> Bool {
@@ -225,6 +225,7 @@ private struct ItemCardView: View, Equatable {
                     }
                     .contentShape(Rectangle())
                     .onTapGesture {
+                        guard !selectionMode else { return }
                         nameInput = item.name
                         showNamePopover = true
                         DispatchQueue.main.async { nameFocused = true }
@@ -410,6 +411,57 @@ private struct ItemCardView: View, Equatable {
             .animation(.spring(dampingFraction: 0.85), value: isSelected)
             .highPriorityGesture(TapGesture(count: 2).onEnded { onDefaultAction(item) })
             .simultaneousGesture(TapGesture(count: 1).onEnded { onSelect(item) })
+        }
+        .contextMenu {
+            Button {
+                onPaste(item, false)
+            } label: {
+                Label {
+                    Text(L("timeline.help.copy"))
+                } icon: {
+                    Image(systemName: "doc.on.clipboard")
+                }
+            }
+            Button {
+                onPaste(item, true)
+            } label: {
+                Label {
+                    Text(L("timeline.help.pastePlain"))
+                } icon: {
+                    Image(systemName: "textformat")
+                }
+            }
+            Button {
+                onDirectPaste(item)
+            } label: {
+                Label {
+                    Text(L("timeline.help.directPaste"))
+                } icon: {
+                    Image(systemName: "keyboard")
+                }
+            }
+            Button {
+                onDelete(item)
+            } label: {
+                Label {
+                    Text(L("timeline.help.delete"))
+                } icon: {
+                    Image(systemName: "trash")
+                }
+            }
+            Menu {
+                ForEach(boards.filter { $0.id != defaultBoardID }) { board in
+                    Button(board.name) {
+                        onAddToBoard(item, board.id)
+                    }
+                }
+            } label: {
+                Label {
+                    Text(L("timeline.help.addToBoard"))
+                } icon: {
+                    Image(systemName: "folder.badge.plus")
+                }
+            }
         }
     }
     private func loadPlainString(_ url: URL) -> String? {
